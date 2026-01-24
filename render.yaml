@@ -1,0 +1,87 @@
+# ============================================
+# FileSanté - Configuration Render.com
+# ============================================
+# Ce fichier configure le déploiement automatique sur Render
+# https://render.com/docs/yaml-spec
+
+services:
+  # ============================================
+  # API Backend (Node.js)
+  # ============================================
+  - type: web
+    name: filesante-api
+    runtime: node
+    region: ohio  # Plus proche de Montréal
+    plan: free    # Gratuit pour démo, passer à starter pour production
+    
+    buildCommand: npm install
+    startCommand: npm start
+    
+    healthCheckPath: /health
+    
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: filesante-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TWILIO_ACCOUNT_SID
+        sync: false  # À configurer manuellement
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+      - key: FRONTEND_URL
+        value: https://filesante.onrender.com
+    
+    autoDeploy: true  # Déploie automatiquement sur push
+
+  # ============================================
+  # Frontend (Static Site)
+  # ============================================
+  - type: web
+    name: filesante-frontend
+    runtime: static
+    region: ohio
+    plan: free
+    
+    buildCommand: echo "No build needed"
+    staticPublishPath: ./frontend
+    
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+    
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://filesante-api.onrender.com/api/*
+      - type: rewrite
+        source: /ws
+        destination: wss://filesante-api.onrender.com/ws
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    
+    autoDeploy: true
+
+# ============================================
+# Database PostgreSQL
+# ============================================
+databases:
+  - name: filesante-db
+    region: ohio
+    plan: free  # 256MB, 1GB storage, gratuit
+    postgresMajorVersion: 15
+    
+    # Script d'initialisation (migrations)
+    # Exécuté automatiquement après création

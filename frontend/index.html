@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FileSanté - File virtuelle pour urgences hospitalières</title>
+  <meta name="description" content="Système de file d'attente virtuelle pour les urgences hospitalières de Montréal. Inscrivez-vous et attendez chez vous.">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .gradient-bg {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 25%, #3b82f6 50%, #0ea5e9 75%, #06b6d4 100%);
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .float { animation: float 3s ease-in-out infinite; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Hero Section -->
+  <header class="gradient-bg text-white">
+    <nav class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center">
+        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+        </div>
+        <span class="ml-3 text-xl font-bold">FileSanté</span>
+      </div>
+      
+      <div class="flex items-center space-x-4">
+        <a href="login.html" class="text-white hover:text-blue-100 transition-colors">Connexion</a>
+        <a href="#demo" class="px-4 py-2 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition-colors">
+          Démo
+        </a>
+      </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-20 text-center">
+      <h1 class="text-4xl md:text-6xl font-extrabold mb-6">
+        Attendez chez vous,<br>pas à l'urgence
+      </h1>
+      <p class="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto mb-8">
+        File d'attente virtuelle pour les urgences hospitalières de Montréal.
+        Inscrivez-vous, rentrez chez vous, revenez quand c'est votre tour.
+      </p>
+      
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="#how-it-works" 
+           class="px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all shadow-lg">
+          Comment ça marche?
+        </a>
+        <a href="login.html" 
+           class="px-8 py-4 border-2 border-white text-white font-semibold rounded-xl hover:bg-white hover:text-blue-600 transition-all">
+          Accès professionnel
+        </a>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto">
+        <div>
+          <p class="text-4xl font-bold">4h</p>
+          <p class="text-blue-100">Temps moyen économisé</p>
+        </div>
+        <div>
+          <p class="text-4xl font-bold">92%</p>
+          <p class="text-blue-100">Taux de retour</p>
+        </div>
+        <div>
+          <p class="text-4xl font-bold">4</p>
+          <p class="text-blue-100">Hôpitaux partenaires</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wave -->
+    <svg class="w-full h-16 -mb-1" viewBox="0 0 1440 100" fill="none" preserveAspectRatio="none">
+      <path d="M0 0L60 10C120 20 240 40 360 50C480 60 600 60 720 53.3C840 47 960 33 1080 30C1200 27 1320 33 1380 36.7L1440 40V100H1380C1320 100 1200 100 1080 100C960 100 840 100 720 100C600 100 480 100 360 100C240 100 120 100 60 100H0V0Z" fill="white"/>
+    </svg>
+  </header>
+
+  <!-- How it works -->
+  <section id="how-it-works" class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4">
+      <h2 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-4">Comment ça fonctionne?</h2>
+      <p class="text-xl text-gray-500 text-center mb-12 max-w-2xl mx-auto">
+        Un processus simple en 4 étapes pour éviter l'attente interminable à l'urgence.
+      </p>
+
+      <div class="grid md:grid-cols-4 gap-8">
+        <!-- Step 1 -->
+        <div class="text-center">
+          <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl font-bold text-blue-600">1</span>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Triage normal</h3>
+          <p class="text-gray-500">
+            Vous êtes évalué(e) au triage. Si vous êtes P4 ou P5, on vous propose FileSanté.
+          </p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="text-center">
+          <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl font-bold text-blue-600">2</span>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Scan du QR code</h3>
+          <p class="text-gray-500">
+            Scannez le code QR avec votre téléphone et entrez votre numéro de mobile.
+          </p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="text-center">
+          <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl font-bold text-blue-600">3</span>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Rentrez chez vous</h3>
+          <p class="text-gray-500">
+            Attendez confortablement chez vous. Suivez votre position en temps réel.
+          </p>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="text-center">
+          <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl font-bold text-blue-600">4</span>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Notification SMS</h3>
+          <p class="text-gray-500">
+            Recevez un SMS 45 minutes avant votre passage. Revenez à l'urgence.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo Section -->
+  <section id="demo" class="py-20 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4">
+      <h2 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-4">Essayez la démo</h2>
+      <p class="text-xl text-gray-500 text-center mb-12">
+        Explorez les différentes interfaces du système.
+      </p>
+
+      <div class="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+        <!-- Dashboard -->
+        <a href="login.html" 
+           class="bg-white rounded-2xl p-6 shadow-lg card-hover transition-all duration-300 block">
+          <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">Dashboard Hôpital</h3>
+          <p class="text-gray-500 mb-4">
+            Interface pour les infirmières. Gestion de la file, création de patients, notifications.
+          </p>
+          <span class="text-blue-600 font-medium">Accéder →</span>
+        </a>
+
+        <!-- Patient -->
+        <a href="patient.html?token=DEMO123" 
+           class="bg-white rounded-2xl p-6 shadow-lg card-hover transition-all duration-300 block">
+          <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">Interface Patient</h3>
+          <p class="text-gray-500 mb-4">
+            Vue mobile du patient. Suivi de position, temps estimé, alertes.
+          </p>
+          <span class="text-green-600 font-medium">Voir →</span>
+        </a>
+
+        <!-- API Docs -->
+        <a href="/health" target="_blank"
+           class="bg-white rounded-2xl p-6 shadow-lg card-hover transition-all duration-300 block">
+          <div class="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">API Backend</h3>
+          <p class="text-gray-500 mb-4">
+            Vérifier le statut de l'API. Documentation technique.
+          </p>
+          <span class="text-purple-600 font-medium">Status →</span>
+        </a>
+      </div>
+
+      <!-- Demo credentials -->
+      <div class="mt-12 max-w-xl mx-auto bg-white rounded-xl p-6 shadow-md">
+        <h4 class="font-semibold text-gray-800 mb-3">🔑 Identifiants de démo</h4>
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p class="text-gray-500">Admin:</p>
+            <p class="font-mono bg-gray-100 px-2 py-1 rounded">admin@filesante.ca</p>
+            <p class="font-mono bg-gray-100 px-2 py-1 rounded mt-1">admin123</p>
+          </div>
+          <div>
+            <p class="text-gray-500">Infirmière:</p>
+            <p class="font-mono bg-gray-100 px-2 py-1 rounded">nurse@hmr.filesante.ca</p>
+            <p class="font-mono bg-gray-100 px-2 py-1 rounded mt-1">nurse123</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hospitals -->
+  <section class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Hôpitaux partenaires</h2>
+      
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
+        <div class="text-center p-4">
+          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <span class="text-xl font-bold text-gray-600">HMR</span>
+          </div>
+          <p class="text-sm text-gray-600">Maisonneuve-Rosemont</p>
+        </div>
+        <div class="text-center p-4">
+          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <span class="text-xl font-bold text-gray-600">HND</span>
+          </div>
+          <p class="text-sm text-gray-600">Notre-Dame</p>
+        </div>
+        <div class="text-center p-4">
+          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <span class="text-xl font-bold text-gray-600">HSC</span>
+          </div>
+          <p class="text-sm text-gray-600">Sacré-Cœur</p>
+        </div>
+        <div class="text-center p-4">
+          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            <span class="text-xl font-bold text-gray-600">HGM</span>
+          </div>
+          <p class="text-sm text-gray-600">Général de Montréal</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-20 gradient-bg text-white">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <h2 class="text-3xl md:text-4xl font-bold mb-4">Prêt à transformer vos urgences?</h2>
+      <p class="text-xl text-blue-100 mb-8">
+        Contactez-nous pour déployer FileSanté dans votre établissement.
+      </p>
+      <a href="mailto:contact@filesante.ca" 
+         class="inline-block px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all shadow-lg">
+        Nous contacter
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-gray-400 py-12">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex flex-col md:flex-row items-center justify-between">
+        <div class="flex items-center mb-4 md:mb-0">
+          <div class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+          </div>
+          <span class="ml-3 text-white font-semibold">FileSanté</span>
+        </div>
+        
+        <div class="flex items-center space-x-6 text-sm">
+          <a href="#" class="hover:text-white transition-colors">Confidentialité</a>
+          <a href="#" class="hover:text-white transition-colors">Conditions</a>
+          <a href="#" class="hover:text-white transition-colors">Contact</a>
+        </div>
+      </div>
+      
+      <div class="mt-8 pt-8 border-t border-gray-800 text-center text-sm">
+        <p>© 2024 FileSanté. Conforme à la Loi 25 sur la protection des renseignements personnels.</p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

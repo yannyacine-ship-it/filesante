@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ma file d'attente - FileSanté</title>
+  
+  <!-- PWA Meta -->
+  <meta name="theme-color" content="#1e40af">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FileSanté">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .gradient-header {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+    .pulse-ring::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse-ring 2s infinite;
+    }
+    .status-waiting { background-color: #dbeafe; color: #1d4ed8; }
+    .status-notified { background-color: #fef3c7; color: #d97706; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <header class="gradient-header text-white px-4 py-6 pb-16">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center">
+        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+        </div>
+        <span class="ml-3 text-lg font-semibold">FileSanté</span>
+      </div>
+      
+      <!-- Connection indicator -->
+      <div id="connectionDot" class="w-3 h-3 rounded-full bg-gray-400"></div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="px-4 -mt-10">
+    
+    <!-- Registration form (shown when not activated) -->
+    <div id="registrationView" class="hidden">
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <h1 class="text-xl font-bold text-gray-800">Inscription à la file virtuelle</h1>
+          <p class="text-gray-500 mt-1" id="hospitalNameReg">-</p>
+        </div>
+
+        <form id="activationForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Votre numéro de téléphone</label>
+            <input type="tel" id="phoneInput" required
+                   pattern="[0-9]{10,}"
+                   placeholder="514 123 4567"
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <p class="text-sm text-gray-500 mt-1">Vous recevrez un SMS 45 minutes avant votre passage</p>
+          </div>
+
+          <div class="bg-blue-50 rounded-lg p-4">
+            <div class="flex items-start">
+              <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div>
+                <p class="text-sm text-blue-800 font-medium">Comment ça fonctionne?</p>
+                <p class="text-sm text-blue-600 mt-1">
+                  Inscrivez-vous, puis rentrez chez vous. Nous vous enverrons un SMS quand ce sera votre tour.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" id="activateBtn"
+                  class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+            M'inscrire à la file
+          </button>
+        </form>
+
+        <p class="text-xs text-gray-400 text-center mt-4">
+          En vous inscrivant, vous acceptez de recevoir des notifications SMS.
+        </p>
+      </div>
+    </div>
+
+    <!-- Queue status (shown when activated) -->
+    <div id="queueView" class="hidden">
+      
+      <!-- Status card -->
+      <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-4">
+        <div class="p-6 text-center">
+          <!-- Status indicator -->
+          <div id="statusIndicator" class="relative w-24 h-24 mx-auto mb-4">
+            <div class="absolute inset-0 rounded-full bg-blue-500 opacity-20 pulse-ring"></div>
+            <div class="relative w-24 h-24 rounded-full bg-blue-500 flex items-center justify-center">
+              <span class="text-3xl font-bold text-white" id="positionNumber">-</span>
+            </div>
+          </div>
+          
+          <p class="text-sm text-gray-500 mb-1">Votre position</p>
+          <p class="text-xl font-semibold text-gray-800" id="statusText">Chargement...</p>
+          
+          <div class="mt-4 inline-block px-4 py-2 rounded-full text-sm font-medium" id="statusBadge">
+            -
+          </div>
+        </div>
+
+        <!-- Estimated time -->
+        <div class="border-t border-gray-100 px-6 py-4 bg-gray-50">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <svg class="w-5 h-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span class="text-gray-600">Temps estimé</span>
+            </div>
+            <span class="font-semibold text-gray-800" id="estimatedTime">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hospital info -->
+      <div class="bg-white rounded-2xl shadow-lg p-4 mb-4">
+        <div class="flex items-start">
+          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="font-semibold text-gray-800" id="hospitalNameQueue">-</p>
+            <p class="text-sm text-gray-500" id="hospitalAddress">-</p>
+            <a href="#" id="hospitalPhone" class="text-sm text-blue-600">-</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notification card (shown when notified) -->
+      <div id="notificationCard" class="hidden bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-4">
+        <div class="flex items-start">
+          <div class="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="font-semibold text-yellow-800">C'est bientôt votre tour!</p>
+            <p class="text-sm text-yellow-700 mt-1">
+              Dirigez-vous vers l'urgence maintenant. Présentez-vous à l'accueil.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="space-y-3">
+        <button onclick="showAlertModal()" 
+                class="w-full py-3 bg-red-100 text-red-700 font-medium rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          Signaler une aggravation
+        </button>
+        
+        <button onclick="confirmCancel()" 
+                class="w-full py-3 border border-gray-300 text-gray-600 font-medium rounded-lg">
+          Annuler mon inscription
+        </button>
+      </div>
+
+      <!-- Token display -->
+      <div class="mt-6 text-center">
+        <p class="text-sm text-gray-400">Votre code</p>
+        <p class="text-lg font-mono font-bold text-gray-600" id="tokenDisplay">-</p>
+      </div>
+    </div>
+
+    <!-- Invalid/expired view -->
+    <div id="errorView" class="hidden">
+      <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <h1 class="text-xl font-bold text-gray-800">Lien invalide ou expiré</h1>
+        <p class="text-gray-500 mt-2" id="errorMessage">
+          Ce code QR n'est plus valide. Veuillez demander un nouveau code à l'accueil de l'urgence.
+        </p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Alert Modal -->
+  <div id="alertModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
+    <div class="bg-white rounded-t-2xl w-full max-w-md p-6 animate-slide-up">
+      <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+      
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">Signaler une aggravation</h3>
+      
+      <p class="text-sm text-gray-600 mb-4">
+        Si votre état s'est aggravé depuis votre arrivée, signalez-le à l'équipe médicale.
+      </p>
+
+      <div class="space-y-3 mb-6">
+        <button onclick="sendAlert('worsening')" 
+                class="w-full p-4 text-left border border-gray-200 rounded-lg hover:bg-gray-50">
+          <p class="font-medium text-gray-800">État général dégradé</p>
+          <p class="text-sm text-gray-500">Douleur accrue, nouveaux symptômes...</p>
+        </button>
+        
+        <button onclick="sendAlert('emergency')" 
+                class="w-full p-4 text-left border border-red-200 bg-red-50 rounded-lg">
+          <p class="font-medium text-red-700">Urgence</p>
+          <p class="text-sm text-red-600">Difficultés respiratoires, douleur thoracique...</p>
+        </button>
+      </div>
+
+      <button onclick="closeAlertModal()" 
+              class="w-full py-3 border border-gray-300 text-gray-600 font-medium rounded-lg">
+        Annuler
+      </button>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    // State
+    let patientToken = null;
+    let patientData = null;
+    let refreshInterval = null;
+
+    // Get token from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    patientToken = urlParams.get('token');
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async function() {
+      if (!patientToken) {
+        showError('Aucun code de file fourni.');
+        return;
+      }
+
+      await loadPatientData();
+      setupForms();
+    });
+
+    async function loadPatientData() {
+      const result = await FileSanteAPI.getPatient(patientToken);
+
+      if (!result.success) {
+        showError(result.error || 'Patient non trouvé');
+        return;
+      }
+
+      patientData = result.data;
+
+      // Check status
+      if (patientData.status === 'pending') {
+        showRegistrationView();
+      } else if (['waiting', 'notified'].includes(patientData.status)) {
+        showQueueView();
+        connectRealtime();
+        startAutoRefresh();
+      } else {
+        showError('Cette inscription a expiré ou a été annulée.');
+      }
+    }
+
+    function showRegistrationView() {
+      document.getElementById('registrationView').classList.remove('hidden');
+      document.getElementById('queueView').classList.add('hidden');
+      document.getElementById('errorView').classList.add('hidden');
+      
+      document.getElementById('hospitalNameReg').textContent = patientData.hospital.name;
+    }
+
+    function showQueueView() {
+      document.getElementById('registrationView').classList.add('hidden');
+      document.getElementById('queueView').classList.remove('hidden');
+      document.getElementById('errorView').classList.add('hidden');
+      
+      updateQueueUI();
+    }
+
+    function showError(message) {
+      document.getElementById('registrationView').classList.add('hidden');
+      document.getElementById('queueView').classList.add('hidden');
+      document.getElementById('errorView').classList.remove('hidden');
+      document.getElementById('errorMessage').textContent = message;
+    }
+
+    function updateQueueUI() {
+      if (!patientData) return;
+
+      // Position
+      document.getElementById('positionNumber').textContent = patientData.position || '-';
+      
+      // Status text
+      const statusText = document.getElementById('statusText');
+      const statusBadge = document.getElementById('statusBadge');
+      const statusIndicator = document.getElementById('statusIndicator');
+      const notificationCard = document.getElementById('notificationCard');
+
+      if (patientData.status === 'waiting') {
+        statusText.textContent = 'Vous êtes dans la file';
+        statusBadge.textContent = 'En attente';
+        statusBadge.className = 'mt-4 inline-block px-4 py-2 rounded-full text-sm font-medium status-waiting';
+        statusIndicator.querySelector('div:last-child').className = 'relative w-24 h-24 rounded-full bg-blue-500 flex items-center justify-center';
+        notificationCard.classList.add('hidden');
+      } else if (patientData.status === 'notified') {
+        statusText.textContent = 'C\'est bientôt votre tour!';
+        statusBadge.textContent = 'Notifié';
+        statusBadge.className = 'mt-4 inline-block px-4 py-2 rounded-full text-sm font-medium status-notified';
+        statusIndicator.querySelector('div:last-child').className = 'relative w-24 h-24 rounded-full bg-yellow-500 flex items-center justify-center';
+        notificationCard.classList.remove('hidden');
+      }
+
+      // Estimated time
+      document.getElementById('estimatedTime').textContent = 
+        patientData.estimatedWait ? FileSanteAPI.formatWaitTime(patientData.estimatedWait) : '-';
+
+      // Hospital info
+      document.getElementById('hospitalNameQueue').textContent = patientData.hospital.name;
+      document.getElementById('hospitalAddress').textContent = patientData.hospital.address || '';
+      const phoneEl = document.getElementById('hospitalPhone');
+      phoneEl.textContent = patientData.hospital.phone || '';
+      phoneEl.href = `tel:${patientData.hospital.phone}`;
+
+      // Token
+      document.getElementById('tokenDisplay').textContent = patientData.token;
+    }
+
+    // Real-time connection
+    function connectRealtime() {
+      FileSanteAPI.connectWebSocket(patientData.hospital.code, 'patient', patientToken);
+
+      FileSanteAPI.onWebSocketEvent('onConnect', () => {
+        document.getElementById('connectionDot').className = 'w-3 h-3 rounded-full bg-green-500';
+      });
+
+      FileSanteAPI.onWebSocketEvent('onDisconnect', () => {
+        document.getElementById('connectionDot').className = 'w-3 h-3 rounded-full bg-red-500';
+      });
+
+      FileSanteAPI.onWebSocketEvent('notification', (data) => {
+        // Show notification
+        if (Notification.permission === 'granted') {
+          new Notification('FileSanté', { body: data.message });
+        }
+        loadPatientData();
+      });
+
+      FileSanteAPI.onWebSocketEvent('position_update', (data) => {
+        patientData.position = data.position;
+        patientData.estimatedWait = data.estimatedWait;
+        updateQueueUI();
+      });
+    }
+
+    function startAutoRefresh() {
+      // Refresh every 30 seconds
+      refreshInterval = setInterval(async () => {
+        await loadPatientData();
+      }, 30000);
+    }
+
+    // Form handlers
+    function setupForms() {
+      document.getElementById('activationForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const phone = document.getElementById('phoneInput').value.replace(/\D/g, '');
+        
+        if (phone.length < 10) {
+          alert('Veuillez entrer un numéro de téléphone valide');
+          return;
+        }
+
+        const btn = document.getElementById('activateBtn');
+        btn.disabled = true;
+        btn.textContent = 'Inscription...';
+
+        const result = await FileSanteAPI.activatePatient(patientToken, phone);
+
+        if (result.success) {
+          patientData = { ...patientData, ...result.data, status: 'waiting' };
+          showQueueView();
+          connectRealtime();
+          startAutoRefresh();
+          
+          // Request notification permission
+          if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+          }
+        } else {
+          alert(result.error || 'Erreur lors de l\'inscription');
+        }
+
+        btn.disabled = false;
+        btn.textContent = 'M\'inscrire à la file';
+      });
+    }
+
+    // Alert functionality
+    function showAlertModal() {
+      document.getElementById('alertModal').classList.remove('hidden');
+    }
+
+    function closeAlertModal() {
+      document.getElementById('alertModal').classList.add('hidden');
+    }
+
+    async function sendAlert(alertType) {
+      const result = await FileSanteAPI.reportAlert(patientToken, alertType);
+      
+      if (result.success) {
+        closeAlertModal();
+        alert('✅ Votre signalement a été transmis à l\'équipe médicale.');
+      } else {
+        alert('Erreur: ' + (result.error || 'Impossible d\'envoyer l\'alerte'));
+      }
+    }
+
+    // Cancel functionality
+    async function confirmCancel() {
+      if (!confirm('Êtes-vous sûr de vouloir annuler votre inscription? Vous perdrez votre place dans la file.')) {
+        return;
+      }
+
+      const result = await FileSanteAPI.cancelPatient(patientData.id);
+      
+      if (result.success) {
+        if (refreshInterval) clearInterval(refreshInterval);
+        FileSanteAPI.disconnectWebSocket();
+        showError('Votre inscription a été annulée. Merci d\'avoir utilisé FileSanté.');
+      } else {
+        alert('Erreur: ' + (result.error || 'Impossible d\'annuler'));
+      }
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      FileSanteAPI.disconnectWebSocket();
+    });
+  </script>
+</body>
+</html>

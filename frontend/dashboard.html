@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - FileSanté</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .status-pending { background-color: #f3f4f6; color: #6b7280; }
+    .status-waiting { background-color: #dbeafe; color: #1d4ed8; }
+    .status-notified { background-color: #fef3c7; color: #d97706; }
+    .status-returned { background-color: #d1fae5; color: #059669; }
+    .status-noshow { background-color: #fee2e2; color: #dc2626; }
+    .priority-P4 { border-left: 4px solid #f59e0b; }
+    .priority-P5 { border-left: 4px solid #3b82f6; }
+    @keyframes pulse-subtle { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    .animate-pulse-subtle { animation: pulse-subtle 2s infinite; }
+    .alert-card { animation: pulse-subtle 1.5s infinite; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center">
+          <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h1 class="text-xl font-bold text-gray-800">FileSanté</h1>
+            <p class="text-sm text-gray-500" id="hospitalName">Chargement...</p>
+          </div>
+        </div>
+        
+        <!-- Connection status -->
+        <div id="connectionStatus" class="flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-500">
+          <span class="w-2 h-2 rounded-full bg-gray-400 mr-2"></span>
+          <span class="text-sm">Connexion...</span>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <!-- User info -->
+        <div class="text-right">
+          <p class="text-sm font-medium text-gray-700" id="userName">-</p>
+          <p class="text-xs text-gray-500" id="userRole">-</p>
+        </div>
+        
+        <!-- Logout button -->
+        <button onclick="handleLogout()" 
+                class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    
+    <!-- Alert banner for escalated patients -->
+    <div id="alertBanner" class="hidden mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <svg class="w-6 h-6 text-red-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">Alertes patients</h3>
+          <p class="text-sm text-red-600" id="alertCount">0 patient(s) en attente prolongée ou ayant signalé une aggravation</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-gray-500">En file</p>
+            <p class="text-2xl font-bold text-gray-800" id="statActive">-</p>
+          </div>
+          <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-gray-500">Notifiés</p>
+            <p class="text-2xl font-bold text-yellow-600" id="statNotified">-</p>
+          </div>
+          <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-gray-500">Revenus (jour)</p>
+            <p class="text-2xl font-bold text-green-600" id="statReturned">-</p>
+          </div>
+          <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-gray-500">Temps moyen</p>
+            <p class="text-2xl font-bold text-gray-800" id="statAvgWait">-</p>
+          </div>
+          <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions bar -->
+    <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-2">
+          <button onclick="showNewPatientModal()" 
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Nouveau patient
+          </button>
+          
+          <button onclick="refreshData()" 
+                  class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Actualiser
+          </button>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex items-center space-x-2">
+          <select id="filterPriority" onchange="applyFilters()" 
+                  class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Toutes priorités</option>
+            <option value="P4">P4 - Semi-urgent</option>
+            <option value="P5">P5 - Non-urgent</option>
+          </select>
+          
+          <select id="filterStatus" onchange="applyFilters()" 
+                  class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Tous statuts</option>
+            <option value="pending">En attente d'activation</option>
+            <option value="waiting">En file</option>
+            <option value="notified">Notifiés</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Queue list -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-800">File d'attente</h2>
+      </div>
+      
+      <div id="queueList" class="divide-y divide-gray-100">
+        <!-- Loading state -->
+        <div class="p-8 text-center text-gray-500">
+          <svg class="animate-spin h-8 w-8 mx-auto mb-4 text-blue-600" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p>Chargement de la file d'attente...</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- New Patient Modal -->
+  <div id="newPatientModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-800">Nouveau patient</h3>
+      </div>
+      
+      <form id="newPatientForm" class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Priorité</label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="relative">
+              <input type="radio" name="priority" value="P4" class="peer sr-only" checked>
+              <div class="p-4 border-2 rounded-lg cursor-pointer transition-all peer-checked:border-yellow-500 peer-checked:bg-yellow-50">
+                <p class="font-semibold text-yellow-600">P4</p>
+                <p class="text-sm text-gray-500">Semi-urgent</p>
+              </div>
+            </label>
+            <label class="relative">
+              <input type="radio" name="priority" value="P5" class="peer sr-only">
+              <div class="p-4 border-2 rounded-lg cursor-pointer transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50">
+                <p class="font-semibold text-blue-600">P5</p>
+                <p class="text-sm text-gray-500">Non-urgent</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Raison de consultation</label>
+          <select name="reason" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Sélectionner...</option>
+            <option value="douleur_mineure">Douleur mineure</option>
+            <option value="mal_de_tete">Mal de tête</option>
+            <option value="toux_persistante">Toux persistante</option>
+            <option value="douleur_abdominale">Douleur abdominale</option>
+            <option value="entorse">Entorse / Foulure</option>
+            <option value="coupure_superficielle">Coupure superficielle</option>
+            <option value="eruption_cutanee">Éruption cutanée</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+
+        <div class="flex space-x-3 pt-4">
+          <button type="button" onclick="closeNewPatientModal()" 
+                  class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+            Annuler
+          </button>
+          <button type="submit" id="createPatientBtn"
+                  class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            Créer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- QR Code Modal -->
+  <div id="qrModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full text-center">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-800">Code QR généré</h3>
+      </div>
+      
+      <div class="p-6">
+        <img id="qrCodeImage" src="" alt="QR Code" class="mx-auto mb-4 w-48 h-48">
+        <p class="text-sm text-gray-500 mb-2">Token:</p>
+        <p class="text-2xl font-mono font-bold text-blue-600 mb-4" id="qrToken">-</p>
+        <p class="text-sm text-gray-500">Le patient doit scanner ce code pour s'inscrire à la file virtuelle.</p>
+      </div>
+      
+      <div class="px-6 py-4 border-t border-gray-200">
+        <button onclick="closeQrModal()" 
+                class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          Fermer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Patient Action Modal -->
+  <div id="actionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-800">Actions patient</h3>
+        <p class="text-sm text-gray-500" id="actionPatientInfo">-</p>
+      </div>
+      
+      <div class="p-6 space-y-3" id="actionButtons">
+        <!-- Buttons inserted dynamically -->
+      </div>
+      
+      <div class="px-6 py-4 border-t border-gray-200">
+        <button onclick="closeActionModal()" 
+                class="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+          Fermer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    // State
+    let currentUser = null;
+    let hospitalCode = null;
+    let patients = [];
+    let stats = null;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', async function() {
+      // Check auth
+      if (!FileSanteAPI.isAuthenticated()) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      currentUser = FileSanteAPI.getUser();
+      hospitalCode = currentUser.hospital?.code || 'HMR';
+
+      // Update UI with user info
+      document.getElementById('userName').textContent = `${currentUser.firstName} ${currentUser.lastName}`;
+      document.getElementById('userRole').textContent = getRoleLabel(currentUser.role);
+      document.getElementById('hospitalName').textContent = currentUser.hospital?.name || 'Tous les hôpitaux';
+
+      // Load initial data
+      await refreshData();
+
+      // Connect WebSocket
+      connectRealtime();
+
+      // Setup form handlers
+      setupForms();
+    });
+
+    function getRoleLabel(role) {
+      const labels = { nurse: 'Infirmière', admin: 'Administrateur', superadmin: 'Super Admin' };
+      return labels[role] || role;
+    }
+
+    // Connect to WebSocket for real-time updates
+    function connectRealtime() {
+      FileSanteAPI.connectWebSocket(hospitalCode, 'dashboard');
+
+      FileSanteAPI.onWebSocketEvent('onConnect', () => {
+        updateConnectionStatus(true);
+      });
+
+      FileSanteAPI.onWebSocketEvent('onDisconnect', () => {
+        updateConnectionStatus(false);
+      });
+
+      // Listen for patient events
+      FileSanteAPI.onWebSocketEvent('patient_created', (data) => {
+        console.log('Patient created:', data);
+        refreshData();
+      });
+
+      FileSanteAPI.onWebSocketEvent('patient_activated', (data) => {
+        console.log('Patient activated:', data);
+        refreshData();
+      });
+
+      FileSanteAPI.onWebSocketEvent('patient_notified', (data) => {
+        console.log('Patient notified:', data);
+        refreshData();
+      });
+
+      FileSanteAPI.onWebSocketEvent('patient_returned', (data) => {
+        console.log('Patient returned:', data);
+        refreshData();
+      });
+
+      FileSanteAPI.onWebSocketEvent('alert', (data) => {
+        console.log('Alert:', data);
+        showNotification('⚠️ Alerte patient', data.message);
+        refreshData();
+      });
+    }
+
+    function updateConnectionStatus(connected) {
+      const el = document.getElementById('connectionStatus');
+      if (connected) {
+        el.innerHTML = `
+          <span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+          <span class="text-sm text-green-600">Connecté</span>
+        `;
+        el.className = 'flex items-center px-3 py-1 rounded-full bg-green-100 text-green-600';
+      } else {
+        el.innerHTML = `
+          <span class="w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse"></span>
+          <span class="text-sm text-red-600">Déconnecté</span>
+        `;
+        el.className = 'flex items-center px-3 py-1 rounded-full bg-red-100 text-red-600';
+      }
+    }
+
+    // Refresh all data
+    async function refreshData() {
+      await Promise.all([
+        loadStats(),
+        loadQueue(),
+        loadAlerts()
+      ]);
+    }
+
+    async function loadStats() {
+      const result = await FileSanteAPI.getStats(hospitalCode);
+      if (result.success) {
+        stats = result.data;
+        document.getElementById('statActive').textContent = stats.realtime.totalActive;
+        document.getElementById('statNotified').textContent = stats.realtime.notified;
+        document.getElementById('statReturned').textContent = stats.daily.returned || 0;
+        document.getElementById('statAvgWait').textContent = stats.daily.avgWaitTime 
+          ? FileSanteAPI.formatWaitTime(stats.daily.avgWaitTime) 
+          : '-';
+      }
+    }
+
+    async function loadQueue() {
+      const priority = document.getElementById('filterPriority').value;
+      const status = document.getElementById('filterStatus').value;
+
+      const result = await FileSanteAPI.getQueue(hospitalCode, { priority, status });
+      
+      if (result.success) {
+        patients = result.data;
+        renderQueue();
+      }
+    }
+
+    async function loadAlerts() {
+      const result = await FileSanteAPI.getAlerts(hospitalCode);
+      
+      if (result.success && result.data.length > 0) {
+        document.getElementById('alertBanner').classList.remove('hidden');
+        document.getElementById('alertCount').textContent = 
+          `${result.data.length} patient(s) en attente prolongée ou ayant signalé une aggravation`;
+      } else {
+        document.getElementById('alertBanner').classList.add('hidden');
+      }
+    }
+
+    function renderQueue() {
+      const container = document.getElementById('queueList');
+
+      if (patients.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center text-gray-500">
+            <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="text-lg font-medium">File d'attente vide</p>
+            <p class="text-sm">Aucun patient en attente actuellement</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = patients.map(patient => renderPatientCard(patient)).join('');
+    }
+
+    function renderPatientCard(patient) {
+      const isOverdue = patient.waitingMinutes > 360; // > 6h
+      const isEscalated = patient.isEscalated;
+
+      return `
+        <div class="p-4 hover:bg-gray-50 transition-colors priority-${patient.priority} ${isEscalated ? 'bg-red-50' : ''}"
+             onclick="showPatientActions(${patient.id})">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <div class="flex-shrink-0">
+                <div class="w-12 h-12 rounded-full ${patient.priority === 'P4' ? 'bg-yellow-100' : 'bg-blue-100'} flex items-center justify-center">
+                  <span class="text-lg font-bold ${patient.priority === 'P4' ? 'text-yellow-600' : 'text-blue-600'}">
+                    ${patient.priority}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <p class="font-medium text-gray-800">
+                  ${patient.token}
+                  ${isEscalated ? '<span class="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">ALERTE</span>' : ''}
+                </p>
+                <p class="text-sm text-gray-500">${patient.reason || 'Non spécifié'}</p>
+                <p class="text-xs text-gray-400">${patient.phone || 'Téléphone non enregistré'}</p>
+              </div>
+            </div>
+            
+            <div class="text-right">
+              <span class="inline-block px-3 py-1 rounded-full text-sm font-medium status-${patient.status}">
+                ${FileSanteAPI.getStatusLabel(patient.status)}
+              </span>
+              <p class="text-sm text-gray-500 mt-1">
+                ${patient.waitingMinutes > 0 ? `Attente: ${FileSanteAPI.formatWaitTime(patient.waitingMinutes)}` : ''}
+              </p>
+              ${isOverdue ? '<p class="text-xs text-red-500 font-medium">⏱️ Attente prolongée</p>' : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Patient actions
+    let selectedPatientId = null;
+
+    function showPatientActions(patientId) {
+      selectedPatientId = patientId;
+      const patient = patients.find(p => p.id === patientId);
+      
+      if (!patient) return;
+
+      document.getElementById('actionPatientInfo').textContent = 
+        `${patient.token} - ${patient.priority} - ${FileSanteAPI.getStatusLabel(patient.status)}`;
+
+      const buttonsContainer = document.getElementById('actionButtons');
+      let buttons = '';
+
+      if (patient.status === 'waiting') {
+        buttons += `
+          <button onclick="handleNotify(${patient.id})" 
+                  class="w-full px-4 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            Notifier (45 min avant)
+          </button>
+        `;
+      }
+
+      if (patient.status === 'notified') {
+        buttons += `
+          <button onclick="handleReturn(${patient.id})" 
+                  class="w-full px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Marquer comme revenu
+          </button>
+          <button onclick="handleNoShow(${patient.id})" 
+                  class="w-full px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            Marquer no-show
+          </button>
+        `;
+      }
+
+      if (['pending', 'waiting', 'notified'].includes(patient.status)) {
+        buttons += `
+          <button onclick="handleCancel(${patient.id})" 
+                  class="w-full px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+            Annuler
+          </button>
+        `;
+      }
+
+      buttonsContainer.innerHTML = buttons;
+      document.getElementById('actionModal').classList.remove('hidden');
+    }
+
+    async function handleNotify(patientId) {
+      const result = await FileSanteAPI.notifyPatient(patientId);
+      if (result.success) {
+        showNotification('✅ Succès', 'Patient notifié par SMS');
+        closeActionModal();
+        await refreshData();
+      } else {
+        showNotification('❌ Erreur', result.error);
+      }
+    }
+
+    async function handleReturn(patientId) {
+      const result = await FileSanteAPI.markReturned(patientId);
+      if (result.success) {
+        showNotification('✅ Succès', 'Patient marqué comme revenu');
+        closeActionModal();
+        await refreshData();
+      } else {
+        showNotification('❌ Erreur', result.error);
+      }
+    }
+
+    async function handleNoShow(patientId) {
+      const result = await FileSanteAPI.markNoShow(patientId);
+      if (result.success) {
+        showNotification('✅ Succès', 'Patient marqué comme no-show');
+        closeActionModal();
+        await refreshData();
+      } else {
+        showNotification('❌ Erreur', result.error);
+      }
+    }
+
+    async function handleCancel(patientId) {
+      if (!confirm('Annuler ce patient?')) return;
+      
+      const result = await FileSanteAPI.cancelPatient(patientId);
+      if (result.success) {
+        showNotification('✅ Succès', 'Patient annulé');
+        closeActionModal();
+        await refreshData();
+      } else {
+        showNotification('❌ Erreur', result.error);
+      }
+    }
+
+    function closeActionModal() {
+      document.getElementById('actionModal').classList.add('hidden');
+      selectedPatientId = null;
+    }
+
+    // New patient
+    function showNewPatientModal() {
+      document.getElementById('newPatientModal').classList.remove('hidden');
+    }
+
+    function closeNewPatientModal() {
+      document.getElementById('newPatientModal').classList.add('hidden');
+      document.getElementById('newPatientForm').reset();
+    }
+
+    function setupForms() {
+      document.getElementById('newPatientForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const priority = formData.get('priority');
+        const reason = formData.get('reason');
+
+        const btn = document.getElementById('createPatientBtn');
+        btn.disabled = true;
+        btn.textContent = 'Création...';
+
+        const result = await FileSanteAPI.createPatient(hospitalCode, priority, reason);
+
+        if (result.success) {
+          closeNewPatientModal();
+          
+          // Show QR Code
+          document.getElementById('qrCodeImage').src = result.data.qrCode;
+          document.getElementById('qrToken').textContent = result.data.token;
+          document.getElementById('qrModal').classList.remove('hidden');
+
+          await refreshData();
+        } else {
+          showNotification('❌ Erreur', result.error);
+        }
+
+        btn.disabled = false;
+        btn.textContent = 'Créer';
+      });
+    }
+
+    function closeQrModal() {
+      document.getElementById('qrModal').classList.add('hidden');
+    }
+
+    // Filters
+    function applyFilters() {
+      loadQueue();
+    }
+
+    // Notifications
+    function showNotification(title, message) {
+      // Simple alert for now - could be replaced with toast
+      alert(`${title}\n${message}`);
+    }
+
+    // Logout
+    function handleLogout() {
+      FileSanteAPI.disconnectWebSocket();
+      FileSanteAPI.logout();
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeNewPatientModal();
+        closeQrModal();
+        closeActionModal();
+      }
+      if (e.key === 'n' && e.ctrlKey) {
+        e.preventDefault();
+        showNewPatientModal();
+      }
+    });
+  </script>
+</body>
+</html>
