@@ -60,6 +60,10 @@ app.use('/api/', limiter);
 
 // Parsing JSON
 app.use(express.json({ limit: '1mb' }));
+<<<<<<< HEAD
+=======
+app.set('trust proxy', 1);
+>>>>>>> e0cdc1b73a06d5fb786a5f61275980607b72922e
 // Servir le frontend
 app.use(express.static('frontend'));
 app.use(express.urlencoded({ extended: true }));
