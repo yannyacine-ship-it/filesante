@@ -60,6 +60,8 @@ app.use('/api/', limiter);
 
 // Parsing JSON
 app.use(express.json({ limit: '1mb' }));
+// Servir le frontend
+app.use(express.static('frontend'));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
