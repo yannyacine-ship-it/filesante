@@ -314,25 +314,51 @@ async function start() {
     // Vérifier la connexion à la base de données
     logger.info('Vérification de la connexion à la base de données...');
     const dbConnected = await db.healthCheck();
-    
+
     if (!dbConnected) {
       throw new Error('Impossible de se connecter à la base de données');
     }
-    logger.info('Base de données connectée');
-    
-    // Exécuter les migrations si nécessaire
+    logger.info('✅ Base de données connectée');
+
+    // ===========================================
+    // NOUVEAU: Exécuter le seed AUTOMATIQUEMENT
+    // ===========================================
+
+    try {
+      // Vérifier si la base de données est vide (pas d'utilisateurs)
+      const { rows: users } = await db.query('SELECT COUNT(*) as count FROM users;');
+
+      if (users[0].count === 0) {
+        logger.warn('⚠️  Base de données vide - Exécution automatique du seed...');
+
+        // Exécuter le seed
+        const seed = require('../migrations/seed');
+        await seed();
+
+        logger.info('✅ Seed terminé avec succès!');
+      } else {
+        logger.info(`✅ Base de données déjà initialisée (${users[0].count} utilisateurs)`);
+      }
+    } catch (seedError) {
+      logger.warn('⚠️  Impossible de vérifier/exécuter le seed:', seedError.message);
+      // Ne pas crasher le serveur si le seed échoue
+    }
+
+    // ===========================================
+
+    // Exécuter les migrations si nécessaire (en dev)
     if (config.env !== 'production') {
       logger.info('Exécution des migrations...');
       const { runMigrations } = require('../migrations/run');
       await runMigrations();
     }
-    
+
     // Initialiser WebSocket
     WebSocketService.init(server);
-    
+
     // Démarrer les jobs planifiés
     startJobs();
-    
+
     // Démarrer le serveur
     server.listen(config.port, () => {
       logger.info(`🏥 FileSanté Backend démarré`);
@@ -342,13 +368,12 @@ async function start() {
       logger.info(`   WebSocket: ws://localhost:${config.port}/ws`);
       logger.info(`   Health: http://localhost:${config.port}/health`);
     });
-    
+
   } catch (error) {
     logger.error('Erreur démarrage serveur', error);
     process.exit(1);
   }
 }
-
 // Gestion de l'arrêt propre
 process.on('SIGTERM', async () => {
   logger.info('Signal SIGTERM reçu, arrêt en cours...');
