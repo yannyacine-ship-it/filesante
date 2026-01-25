@@ -102,6 +102,7 @@ app.get('/health', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientsRoutes);
 app.use('/api/hospitals', hospitalsRoutes);
+app.use('/api/admin', require('./routes/admin-ops'));
 
 // Webhook Twilio pour status SMS
 app.post('/webhooks/twilio/status', express.urlencoded({ extended: false }), async (req, res) => {
