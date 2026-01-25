@@ -103,6 +103,68 @@ app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientsRoutes);
 app.use('/api/hospitals', hospitalsRoutes);
 app.use('/api/admin', require('./routes/admin-ops'));
+// ============================================
+// ENDPOINT POUR EXÉCUTER LE SEED
+// ============================================
+
+// Endpoint pour initialiser la base de données (accessible via HTTP)
+app.post('/seed', async (req, res) => {
+  try {
+    logger.info('🌱 Exécution du seed demandée...');
+
+    // Exécuter le seed
+    const seed = require('./migrations/seed');
+    await seed();
+
+    logger.info('✅ Seed terminé avec succès!');
+
+    res.json({
+      success: true,
+      message: 'Base de données initialisée avec succès',
+      data: {
+        admin_email: 'admin@filesante.ca',
+        admin_password: 'admin123',
+        nurses: 'nurse@hmr.filesante.ca, nurse@hnd.filesante.ca, nurse@hsc.filesante.ca, nurse@hgm.filesante.ca',
+        nurse_password: 'nurse123',
+        hospitals: 'HMR, HND, HSC, HGM'
+      }
+    });
+
+  } catch (error) {
+    logger.error('❌ Erreur lors du seed:', error);
+
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: 'Le seed a échoué. Vérifiez les logs Railway pour plus de détails.'
+    });
+  }
+});
+
+// Endpoint pour vérifier l'état de la base de données
+app.get('/database-status', async (req, res) => {
+  try {
+    const { rows: users } = await db.query('SELECT email, role, is_active FROM users LIMIT 5;');
+    const { rows: hospitals } = await db.query('SELECT code, name FROM hospitals LIMIT 5;');
+
+    res.json({
+      success: true,
+      data: {
+        users_count: users.length,
+        hospitals_count: hospitals.length,
+        users,
+        hospitals,
+        is_initialized: users.length > 0 && hospitals.length > 0
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // Webhook Twilio pour status SMS
 app.post('/webhooks/twilio/status', express.urlencoded({ extended: false }), async (req, res) => {
