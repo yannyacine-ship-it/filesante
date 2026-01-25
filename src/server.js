@@ -47,26 +47,23 @@ app.use(cors({
 // Compression
 app.use(compression());
 
-// Rate limiting
+// Trust proxy - IMPORTANT: Must be set BEFORE rate limiting
+// Required for Railway, Render, and other reverse proxy platforms
+app.set('trust proxy', 1);
+
+// Rate limiting - Must come AFTER trust proxy is set
 const limiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.max,
-  message: { 
-    success: false, 
-    error: 'Trop de requêtes, veuillez réessayer plus tard' 
+  message: {
+    success: false,
+    error: 'Trop de requêtes, veuillez réessayer plus tard'
   }
 });
 app.use('/api/', limiter);
 
 // Parsing JSON
 app.use(express.json({ limit: '1mb' }));
-<<<<<<< HEAD
-=======
-app.set('trust proxy', 1);
->>>>>>> e0cdc1b73a06d5fb786a5f61275980607b72922e
-// Servir le frontend
-app.use(express.static('frontend'));
-app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Logging des requêtes
