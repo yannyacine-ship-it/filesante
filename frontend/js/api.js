@@ -3,10 +3,9 @@
  * Gère toutes les communications avec le backend
  */
 
-const FileSanteAPI = (function() {
   // Configuration
   const config = {
-    // CORRIGÉ: URL explicite pour Railway (plus fiable)
+    // URL EXPLICITE pour Railway - PLUS FIOABLE
     baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'http://localhost:3000/api'
       : 'https://filesante-api-production-caf7.up.railway.app/api',
