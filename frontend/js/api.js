@@ -1,18 +1,18 @@
 /**
- * FileSanté - Service API Frontend
+ * FileSanté - Service API Frontend (CORRIGÉ)
  * Gère toutes les communications avec le backend
  */
 
 const FileSanteAPI = (function() {
   // Configuration
   const config = {
-    // Auto-détection de l'URL API
-    baseUrl: window.location.hostname === 'localhost' 
+    // CORRIGÉ: URL explicite pour Railway (plus fiable)
+    baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'http://localhost:3000/api'
-      : `${window.location.protocol}//${window.location.host}/api`,
-    wsUrl: window.location.hostname === 'localhost'
+      : 'https://filesante-api-production-caf7.up.railway.app/api',
+    wsUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'ws://localhost:3000/ws'
-      : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`
+      : 'wss://filesante-api-production-caf7.up.railway.app/ws'
   };
 
   // Token storage
@@ -48,23 +48,51 @@ const FileSanteAPI = (function() {
 
     try {
       const response = await fetch(`${config.baseUrl}${endpoint}`, options);
-      const result = await response.json();
 
-      // Token expiré - essayer de rafraîchir
-      if (response.status === 401 && result.code === 'TOKEN_EXPIRED' && refreshToken) {
-        const refreshed = await refreshAuthToken();
-        if (refreshed) {
-          // Réessayer la requête avec le nouveau token
-          headers['Authorization'] = `Bearer ${authToken}`;
-          const retryResponse = await fetch(`${config.baseUrl}${endpoint}`, options);
-          return await retryResponse.json();
+      // CORRIGÉ: Gérer les erreurs HTTP avant de parser JSON
+      if (!response.ok) {
+        // Token expiré ou invalide
+        if (response.status === 401) {
+          // Effacer le token invalide
+          logout();
+          return {
+            success: false,
+            error: 'Session expirée. Veuillez vous reconnecter.'
+          };
         }
+
+        // Autres erreurs
+        let errorMessage = 'Erreur serveur';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          // Ignore si pas de JSON
+        }
+
+        return {
+          success: false,
+          error: errorMessage
+        };
       }
 
+      const result = await response.json();
       return result;
     } catch (error) {
       console.error('API Error:', error);
-      return { success: false, error: error.message };
+
+      // CORRIGÉ: Message d'erreur plus clair
+      if (error.name === 'TypeError' && error.message.includes('JSON')) {
+        return {
+          success: false,
+          error: 'Erreur de communication avec le serveur'
+        };
+      }
+
+      return {
+        success: false,
+        error: 'Erreur de connexion au serveur'
+      };
     }
   }
 
@@ -79,6 +107,10 @@ const FileSanteAPI = (function() {
         body: JSON.stringify({ refreshToken })
       });
 
+      if (!response.ok) {
+        throw new Error('Refresh failed');
+      }
+
       const result = await response.json();
 
       if (result.success) {
@@ -86,6 +118,8 @@ const FileSanteAPI = (function() {
         localStorage.setItem('filesante_token', authToken);
         return true;
       }
+
+      return false;
     } catch (error) {
       console.error('Token refresh failed:', error);
     }
@@ -107,8 +141,8 @@ const FileSanteAPI = (function() {
       currentUser = result.data.user;
       localStorage.setItem('filesante_token', authToken);
       localStorage.setItem('filesante_user', JSON.stringify(currentUser));
-      
-      // Refresh token est dans un cookie httpOnly, mais on le stocke aussi
+
+      // CORRIGÉ: Gérer le refresh token correctement
       if (result.data.refreshToken) {
         refreshToken = result.data.refreshToken;
         localStorage.setItem('filesante_refresh', refreshToken);
@@ -125,11 +159,11 @@ const FileSanteAPI = (function() {
     localStorage.removeItem('filesante_token');
     localStorage.removeItem('filesante_refresh');
     localStorage.removeItem('filesante_user');
-    
+
     if (ws) {
       ws.close();
     }
-    
+
     // Rediriger vers login
     if (!window.location.pathname.includes('login')) {
       window.location.href = 'login.html';
@@ -277,7 +311,7 @@ const FileSanteAPI = (function() {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
+
         if (wsCallbacks.onMessage) {
           wsCallbacks.onMessage(data);
         }
@@ -432,7 +466,7 @@ const FileSanteAPI = (function() {
   };
 })();
 
-// Export pour modules
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = FileSanteAPI;
+// Export pour compatibilité
+if (typeof window !== 'undefined') {
+  window.FileSanteAPI = FileSanteAPI;
 }
