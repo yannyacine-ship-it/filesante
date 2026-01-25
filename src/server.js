@@ -47,23 +47,27 @@ app.use(cors({
 // Compression
 app.use(compression());
 
-// Trust proxy - IMPORTANT: Must be set BEFORE rate limiting
-// Required for Railway, Render, and other reverse proxy platforms
+// Trust proxy - IMPORTANT: Doit être défini AVANT le rate limiting
+// Requis pour Railway, Render et autres reverse proxy
 app.set('trust proxy', 1);
 
-// Rate limiting - Must come AFTER trust proxy is set
+// Rate limiting - Doit être APRÈS trust proxy
 const limiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.max,
-  message: {
-    success: false,
-    error: 'Trop de requêtes, veuillez réessayer plus tard'
+  message: { 
+    success: false, 
+    error: 'Trop de requêtes, veuillez réessayer plus tard' 
   }
 });
 app.use('/api/', limiter);
 
 // Parsing JSON
 app.use(express.json({ limit: '1mb' }));
+
+// Servir le frontend
+app.use(express.static('frontend'));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Logging des requêtes
@@ -102,69 +106,6 @@ app.get('/health', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientsRoutes);
 app.use('/api/hospitals', hospitalsRoutes);
-app.use('/api/admin', require('./routes/admin-ops'));
-// ============================================
-// ENDPOINT POUR EXÉCUTER LE SEED
-// ============================================
-
-// Endpoint pour initialiser la base de données (accessible via HTTP)
-app.post('/seed', async (req, res) => {
-  try {
-    logger.info('🌱 Exécution du seed demandée...');
-
-    // Exécuter le seed
-    const seed = require('./migrations/seed');
-    await seed();
-
-    logger.info('✅ Seed terminé avec succès!');
-
-    res.json({
-      success: true,
-      message: 'Base de données initialisée avec succès',
-      data: {
-        admin_email: 'admin@filesante.ca',
-        admin_password: 'admin123',
-        nurses: 'nurse@hmr.filesante.ca, nurse@hnd.filesante.ca, nurse@hsc.filesante.ca, nurse@hgm.filesante.ca',
-        nurse_password: 'nurse123',
-        hospitals: 'HMR, HND, HSC, HGM'
-      }
-    });
-
-  } catch (error) {
-    logger.error('❌ Erreur lors du seed:', error);
-
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      details: 'Le seed a échoué. Vérifiez les logs Railway pour plus de détails.'
-    });
-  }
-});
-
-// Endpoint pour vérifier l'état de la base de données
-app.get('/database-status', async (req, res) => {
-  try {
-    const { rows: users } = await db.query('SELECT email, role, is_active FROM users LIMIT 5;');
-    const { rows: hospitals } = await db.query('SELECT code, name FROM hospitals LIMIT 5;');
-
-    res.json({
-      success: true,
-      data: {
-        users_count: users.length,
-        hospitals_count: hospitals.length,
-        users,
-        hospitals,
-        is_initialized: users.length > 0 && hospitals.length > 0
-      }
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
 
 // Webhook Twilio pour status SMS
 app.post('/webhooks/twilio/status', express.urlencoded({ extended: false }), async (req, res) => {
@@ -215,76 +156,7 @@ app.post('/api/admin/jobs/:jobName', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
-// ============================================
-// ENDPOINT POUR EXÉCUTER LE SEED
-// ============================================
 
-// Endpoint pour initialiser la base de données (accessible via HTTP)
-app.post('/seed', async (req, res) => {
-  try {
-    logger.info('🌱 Exécution du seed demandée...');
-
-    // Exécuter le seed
-    const seed = require('./migrations/seed');
-    await seed();
-
-    logger.info('✅ Seed terminé avec succès!');
-
-    res.json({
-      success: true,
-      message: 'Base de données initialisée avec succès',
-      data: {
-        admin_email: 'admin@filesante.ca',
-        admin_password: 'admin123',
-        nurses: 'nurse@hmr.filesante.ca, nurse@hnd.filesante.ca, nurse@hsc.filesante.ca, nurse@hgm.filesante.ca',
-        nurse_password: 'nurse123',
-        hospitals: 'HMR, HND, HSC, HGM'
-      }
-    });
-
-  } catch (error) {
-    logger.error('❌ Erreur lors du seed:', error);
-
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      details: 'Le seed a échoué. Vérifiez les logs Railway pour plus de détails.'
-    });
-  }
-});
-
-// Endpoint pour vérifier l'état de la base de données
-app.get('/database-status', async (req, res) => {
-  try {
-    const { rows: users } = await db.query('SELECT email, role, is_active FROM users LIMIT 5;');
-    const { rows: hospitals } = await db.query('SELECT code, name FROM hospitals LIMIT 5;');
-
-    res.json({
-      success: true,
-      data: {
-        users_count: users.length,
-        hospitals_count: hospitals.length,
-        users,
-        hospitals,
-        is_initialized: users.length > 0 && hospitals.length > 0
-      }
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// 404
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Route non trouvée'
-  });
-});
 // 404
 app.use((req, res) => {
   res.status(404).json({ 
@@ -314,34 +186,61 @@ async function start() {
     // Vérifier la connexion à la base de données
     logger.info('Vérification de la connexion à la base de données...');
     const dbConnected = await db.healthCheck();
-
+    
     if (!dbConnected) {
       throw new Error('Impossible de se connecter à la base de données');
     }
     logger.info('✅ Base de données connectée');
 
     // ===========================================
-    // NOUVEAU: Exécuter le seed AUTOMATIQUEMENT
+    // SEED AUTOMATIQUE AU DÉMARRAGE
     // ===========================================
 
-    try {
-      // Vérifier si la base de données est vide (pas d'utilisateurs)
-      const { rows: users } = await db.query('SELECT COUNT(*) as count FROM users;');
+    let seedExecuted = false;
+    let maxRetries = 3;
 
-      if (users[0].count === 0) {
-        logger.warn('⚠️  Base de données vide - Exécution automatique du seed...');
+    for (let attempt = 1; attempt <= maxRetries && !seedExecuted; attempt++) {
+      try {
+        logger.info(`🌱 Tentative ${attempt}/${maxRetries}: Vérification de la base de données...`);
 
-        // Exécuter le seed
-        const seed = require('../migrations/seed');
-        await seed();
+        const { rows: usersCheck } = await db.query(
+          'SELECT COUNT(*) as count FROM users;'
+        );
 
-        logger.info('✅ Seed terminé avec succès!');
-      } else {
-        logger.info(`✅ Base de données déjà initialisée (${users[0].count} utilisateurs)`);
+        const userCount = parseInt(usersCheck[0].count);
+
+        if (userCount === 0) {
+          logger.warn('⚠️  Base de données vide - Exécution du seed...');
+
+          // Exécuter le seed avec require FRESH
+          delete require.cache[require.resolve('../migrations/seed')];
+
+          const seed = require('../migrations/seed');
+          await seed();
+
+          logger.info('✅ Seed terminé avec succès!');
+          seedExecuted = true;
+
+          // Vérifier que les users existent maintenant
+          const { rows: verify } = await db.query('SELECT COUNT(*) as count FROM users;');
+          logger.info(`✅ Utilisateurs créés: ${verify[0].count}`);
+        } else {
+          logger.info(`✅ Base de données déjà initialisée (${userCount} utilisateurs)`);
+          seedExecuted = true;
+          break; // Sortir de la boucle
+        }
+
+      } catch (seedError) {
+        logger.error(`❌ Erreur seed (tentative ${attempt}):`, seedError.message);
+
+        if (attempt === maxRetries) {
+          logger.error('❌ Impossible d\'exécuter le seed après ${maxRetries} tentatives');
+          // Ne pas crasher le serveur si le seed échoue
+        }
+
+        // Attendre avant de réessayer
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
-    } catch (seedError) {
-      logger.warn('⚠️  Impossible de vérifier/exécuter le seed:', seedError.message);
-      // Ne pas crasher le serveur si le seed échoue
     }
 
     // ===========================================
@@ -352,13 +251,13 @@ async function start() {
       const { runMigrations } = require('../migrations/run');
       await runMigrations();
     }
-
+    
     // Initialiser WebSocket
     WebSocketService.init(server);
-
+    
     // Démarrer les jobs planifiés
     startJobs();
-
+    
     // Démarrer le serveur
     server.listen(config.port, () => {
       logger.info(`🏥 FileSanté Backend démarré`);
@@ -367,13 +266,15 @@ async function start() {
       logger.info(`   API: http://localhost:${config.port}/api`);
       logger.info(`   WebSocket: ws://localhost:${config.port}/ws`);
       logger.info(`   Health: http://localhost:${config.port}/health`);
+      logger.info(`   Base de données: ${seedExecuted ? '✅ initialisée' : '⚠️ vérification échouée'}`);
     });
-
+    
   } catch (error) {
     logger.error('Erreur démarrage serveur', error);
     process.exit(1);
   }
 }
+
 // Gestion de l'arrêt propre
 process.on('SIGTERM', async () => {
   logger.info('Signal SIGTERM reçu, arrêt en cours...');
