@@ -1,11 +1,12 @@
 /**
- * FileSanté - Service API Frontend (CORRIGÉ)
+ * FileSanté - Service API Frontend
  * Gère toutes les communications avec le backend
  */
 
+const FileSanteAPI = (function() {
   // Configuration
   const config = {
-    // URL EXPLICITE pour Railway - PLUS FIOABLE
+    // URL EXPLICITE pour Railway - PLUS FIOBLE
     baseUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'http://localhost:3000/api'
       : 'https://filesante-api-production-caf7.up.railway.app/api',
@@ -465,7 +466,7 @@
   };
 })();
 
-// Export pour compatibilité
-if (typeof window !== 'undefined') {
-  window.FileSanteAPI = FileSanteAPI;
+// Export pour modules
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = FileSanteAPI;
 }
