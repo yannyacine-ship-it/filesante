@@ -15,13 +15,13 @@
   </style>
 </head>
 <body class="min-h-screen gradient-bg flex items-center justify-center p-4">
-  
+
   <div class="w-full max-w-md">
     <!-- Logo et titre -->
     <div class="text-center mb-8">
       <div class="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-lg mb-4">
         <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
         </svg>
       </div>
@@ -32,15 +32,26 @@
     <!-- Formulaire de connexion -->
     <div class="bg-white rounded-2xl shadow-xl p-8">
       <h2 class="text-2xl font-semibold text-gray-800 mb-6">Connexion</h2>
-      
+
       <!-- Message d'erreur -->
       <div id="errorMessage" class="hidden mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
         <div class="flex items-center text-red-600">
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
           <span id="errorText"></span>
+        </div>
+      </div>
+
+      <!-- Message d'information -->
+      <div id="infoMessage" class="hidden mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div class="flex items-center text-blue-600">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h-1m4 4h-1m1 4h1m5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+          <span id="infoText"></span>
         </div>
       </div>
 
@@ -53,11 +64,11 @@
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
               </svg>
             </div>
-            <input type="email" id="email" name="email" required
+            <input type="email" id="email" name="email" required autocomplete="email"
                    class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                    placeholder="vous@hopital.ca">
           </div>
@@ -71,19 +82,19 @@
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
               </svg>
             </div>
-            <input type="password" id="password" name="password" required
+            <input type="password" id="password" name="password" required autocomplete="current-password"
                    class="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                    placeholder="••••••••">
-            <button type="button" id="togglePassword" 
+            <button type="button" id="togglePassword"
                     class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="eyeIcon">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
               </svg>
             </button>
@@ -101,7 +112,7 @@
 
         <!-- Bouton connexion -->
         <button type="submit" id="submitBtn"
-                class="w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all flex items-center justify-center">
+                class="w-full py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
           <span id="btnText">Se connecter</span>
           <svg id="btnSpinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -139,88 +150,136 @@
     </p>
   </div>
 
+  <!-- CORRIGÉ: Charger le script API AVANT de l'utiliser -->
   <script src="js/api.js"></script>
   <script>
-    // Vérifier si déjà connecté
-    if (FileSanteAPI.isAuthenticated()) {
-      window.location.href = 'dashboard.html';
-    }
-
-    // Toggle password visibility
-    document.getElementById('togglePassword').addEventListener('click', function() {
-      const password = document.getElementById('password');
-      const eyeIcon = document.getElementById('eyeIcon');
-      
-      if (password.type === 'password') {
-        password.type = 'text';
-        eyeIcon.innerHTML = `
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
-        `;
-      } else {
-        password.type = 'password';
-        eyeIcon.innerHTML = `
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-        `;
+    // Attendre que le script API soit chargé
+    window.addEventListener('DOMContentLoaded', function() {
+      // Vérifier si déjà connecté
+      if (window.FileSanteAPI && window.FileSanteAPI.isAuthenticated()) {
+        window.location.href = 'dashboard.html';
       }
-    });
 
-    // Fill demo credentials
-    function fillDemo(type) {
-      if (type === 'admin') {
-        document.getElementById('email').value = 'admin@filesante.ca';
-        document.getElementById('password').value = 'admin123';
-      } else {
-        document.getElementById('email').value = 'nurse@hmr.filesante.ca';
-        document.getElementById('password').value = 'nurse123';
-      }
-    }
+      // Toggle password visibility
+      document.getElementById('togglePassword').addEventListener('click', function() {
+        const password = document.getElementById('password');
+        const eyeIcon = document.getElementById('eyeIcon');
 
-    // Handle form submission
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const errorMessage = document.getElementById('errorMessage');
-      const errorText = document.getElementById('errorText');
-      const submitBtn = document.getElementById('submitBtn');
-      const btnText = document.getElementById('btnText');
-      const btnSpinner = document.getElementById('btnSpinner');
-
-      // Reset error
-      errorMessage.classList.add('hidden');
-
-      // Show loading
-      submitBtn.disabled = true;
-      btnText.textContent = 'Connexion...';
-      btnSpinner.classList.remove('hidden');
-
-      try {
-        const result = await FileSanteAPI.login(email, password);
-
-        if (result.success) {
-          // Redirect to dashboard
-          window.location.href = 'dashboard.html';
+        if (password.type === 'password') {
+          password.type = 'text';
+          eyeIcon.innerHTML = `
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+        `;
         } else {
-          errorText.textContent = result.error || 'Erreur de connexion';
-          errorMessage.classList.remove('hidden');
+          password.type = 'password';
+          eyeIcon.innerHTML = `
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542 7z"/>
+          `;
         }
-      } catch (error) {
-        errorText.textContent = 'Erreur de connexion au serveur';
-        errorMessage.classList.remove('hidden');
-      } finally {
-        submitBtn.disabled = false;
-        btnText.textContent = 'Se connecter';
-        btnSpinner.classList.add('hidden');
-      }
-    });
+      });
 
-    // Focus on email field
-    document.getElementById('email').focus();
+      // Fill demo credentials
+      function fillDemo(type) {
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+
+        if (type === 'admin') {
+          emailInput.value = 'admin@filesante.ca';
+          passwordInput.value = 'admin123';
+        } else {
+          emailInput.value = 'nurse@hmr.filesante.ca';
+          passwordInput.value = 'nurse123';
+        }
+
+        // Déclencher un effet visuel
+        emailInput.style.borderColor = '#3b82f6';
+        setTimeout(() => {
+          emailInput.style.borderColor = '';
+        }, 500);
+      }
+
+      // Handle form submission
+      document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const infoMessage = document.getElementById('infoMessage');
+        const infoText = document.getElementById('infoText');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+
+        // Reset messages
+        errorMessage.classList.add('hidden');
+        infoMessage.classList.add('hidden');
+
+        // Validation basique
+        if (!email || !password) {
+          errorText.textContent = 'Veuillez remplir tous les champs';
+          errorMessage.classList.remove('hidden');
+          return;
+        }
+
+        if (!email.includes('@') || !email.includes('.')) {
+          errorText.textContent = 'Adresse courriel invalide';
+          errorMessage.classList.remove('hidden');
+          return;
+        }
+
+        // Show loading
+        submitBtn.disabled = true;
+        btnText.textContent = 'Connexion...';
+        btnSpinner.classList.remove('hidden');
+
+        try {
+          // CORRIGÉ: Vérifier que FileSanteAPI existe
+          if (!window.FileSanteAPI) {
+            throw new Error('API non chargée. Veuillez rafraîchir la page.');
+          }
+
+          const result = await window.FileSanteAPI.login(email, password);
+
+          if (result.success) {
+            // CORRIGÉ: Afficher message de succès
+            infoText.textContent = 'Connexion réussie! Redirection en cours...';
+            infoMessage.classList.remove('hidden');
+
+            // Attendre un peu avant de rediriger (pour l'UX)
+            setTimeout(() => {
+              window.location.href = 'dashboard.html';
+            }, 500);
+          } else {
+            errorText.textContent = result.error || 'Erreur de connexion';
+            errorMessage.classList.remove('hidden');
+
+            // CORRIGÉ: Si erreur de session, effacer localStorage
+            if (result.error && result.error.includes('expirée')) {
+              localStorage.removeItem('filesante_token');
+              localStorage.removeItem('filesante_user');
+            }
+          }
+        } catch (error) {
+          console.error('Login error:', error);
+
+          errorText.textContent = error.message || 'Erreur de connexion au serveur';
+          errorMessage.classList.remove('hidden');
+        } finally {
+          submitBtn.disabled = false;
+          btnText.textContent = 'Se connecter';
+          btnSpinner.classList.add('hidden');
+        }
+      });
+
+      // Focus on email field
+      document.getElementById('email').focus();
+    });
   </script>
 </body>
 </html>
