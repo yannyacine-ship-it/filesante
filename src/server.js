@@ -1,155 +1,172 @@
 /**
- * Configuration et pool de connexion PostgreSQL - Version Railway
+ * FileSanté - Serveur Principal Express
+ * File virtuelle pour urgences hospitalières
  */
 
-const { Pool } = require('pg');
-const logger = require('../src/utils/logger');
+require('dotenv').config();
 
-// URL de connexion - PRIORITÉ ABSOLUE à DATABASE_URL
-const connectionString = process.env.DATABASE_URL;
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const path = require('path');
+const http = require('http');
 
-// Log de débogage (sans mot de passe)
-if (connectionString) {
+const config = require('../config');
+const db = require('../config/database');
+const logger = require('./utils/logger');
+
+// Routes
+const authRoutes = require('./routes/auth');
+const patientsRoutes = require('./routes/patients');
+const hospitalsRoutes = require('./routes/hospitals');
+
+// Services
+const WebSocketService = require('./services/WebSocketService');
+
+// Créer l'app Express
+const app = express();
+const server = http.createServer(app);
+
+// Trust proxy pour Railway (IMPORTANT!)
+app.set('trust proxy', 1);
+
+// Middleware de sécurité
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+
+// CORS
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+
+// Compression
+app.use(compression());
+
+// Parse JSON
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Servir le frontend statique
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+// Logging des requêtes
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    if (req.path.startsWith('/api') || duration > 1000) {
+      logger.info(`${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+    }
+  });
+  next();
+});
+
+// ==================== ROUTES API ====================
+
+// Health check endpoint
+app.get('/health', async (req, res) => {
   try {
-    const url = new URL(connectionString);
-    const safeUrl = `${url.protocol}//${url.hostname}:${url.port}${url.pathname}`;
-    logger.info(`📦 Configuration DB: ${safeUrl}`);
+    const dbHealth = await db.healthCheck();
+    
+    res.json({
+      status: dbHealth.healthy ? 'healthy' : 'degraded',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      environment: config.env,
+      services: {
+        database: dbHealth.healthy ? 'connected' : 'disconnected',
+        websocket: 'active'
+      },
+      database: dbHealth
+    });
   } catch (error) {
-    logger.info('📦 Configuration DB: URL définie');
+    logger.error('Health check error:', error);
+    res.status(500).json({
+      status: 'unhealthy',
+      error: error.message
+    });
   }
-} else {
-  logger.error('❌ DATABASE_URL non définie!');
-  logger.warn('⚠️  Le serveur utilisera les valeurs par défaut (localhost)');
-}
-
-// Configuration du pool
-const pool = new Pool({
-  connectionString: connectionString,
-  // SSL requis en production sur Railway
-  ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: false
-  } : false,
-  // Optimisations pour Railway
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
 });
 
-// Event listeners pour le débogage
-pool.on('connect', () => {
-  logger.debug('🔄 Nouvelle connexion au pool PostgreSQL');
+// Routes API
+app.use('/api/auth', authRoutes);
+app.use('/api/patients', patientsRoutes);
+app.use('/api/hospitals', hospitalsRoutes);
+
+// Liste des hôpitaux (endpoint public simplifié)
+app.get('/api/hospitals-list', (req, res) => {
+  const hospitals = Object.entries(config.hospitals).map(([code, data]) => ({
+    code,
+    ...data
+  }));
+  res.json({ success: true, data: hospitals });
 });
 
-pool.on('error', (err) => {
-  logger.error('❌ Erreur pool PostgreSQL:', err.message);
+// ==================== FRONTEND ROUTES ====================
+
+// Route catch-all pour SPA - servir le frontend
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  } else {
+    res.status(404).json({ success: false, message: 'Route API non trouvée' });
+  }
 });
 
-pool.on('acquire', () => {
-  logger.debug('📥 Client acquis du pool');
+// ==================== ERROR HANDLING ====================
+
+// Error handler global
+app.use((err, req, res, next) => {
+  logger.error('Erreur serveur:', err);
+  res.status(500).json({
+    success: false,
+    message: config.env === 'production' ? 'Erreur serveur' : err.message
+  });
 });
 
-pool.on('release', () => {
-  logger.debug('📤 Client libéré dans le pool');
+// ==================== DÉMARRAGE ====================
+
+// Initialiser WebSocket
+const wss = WebSocketService.init(server);
+
+// Démarrer le serveur
+const PORT = config.port;
+
+server.listen(PORT, '0.0.0.0', () => {
+  logger.info('========================================');
+  logger.info('🏥 FileSanté Backend démarré avec succès');
+  logger.info('========================================');
+  logger.info(`   Environment: ${config.env}`);
+  logger.info(`   Port: ${PORT}`);
+  logger.info(`   API: http://localhost:${PORT}/api`);
+  logger.info(`   Frontend: http://localhost:${PORT}/`);
+  logger.info(`   WebSocket: ws://localhost:${PORT}/ws`);
+  logger.info(`   Health: http://localhost:${PORT}/health`);
+  logger.info('========================================');
 });
 
-// Helper pour les requêtes
-const db = {
-  // Exécuter une requête simple
-  query: async (text, params) => {
-    const start = Date.now();
-    try {
-      const result = await pool.query(text, params);
-      const duration = Date.now() - start;
-      
-      // Log seulement pour les requêtes longues ou en debug
-      if (duration > 1000 || process.env.LOG_LEVEL === 'debug') {
-        logger.debug(`📊 Requête (${duration}ms): ${text.substring(0, 50)}...`);
-      }
-      
-      return result;
-    } catch (error) {
-      const duration = Date.now() - start;
-      logger.error('❌ Erreur requête SQL:', {
-        query: text.substring(0, 100),
-        params: params,
-        error: error.message,
-        duration: `${duration}ms`
-      });
-      throw error;
-    }
-  },
-  
-  // Obtenir un client dédié (pour les transactions)
-  getClient: async () => {
-    const client = await pool.connect();
-    
-    // Timeout de sécurité
-    const timeout = setTimeout(() => {
-      logger.warn('⏰ Timeout client DB - release forcé');
-      client.release();
-    }, 30000);
-    
-    // Override release pour clear le timeout
-    const originalRelease = client.release;
-    client.release = () => {
-      clearTimeout(timeout);
-      originalRelease.apply(client);
-    };
-    
-    return client;
-  },
-  
-  // Transaction helper
-  transaction: async (callback) => {
-    const client = await db.getClient();
-    try {
-      await client.query('BEGIN');
-      const result = await callback(client);
-      await client.query('COMMIT');
-      return result;
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-  },
-  
-  // Health check amélioré
-  healthCheck: async () => {
-    try {
-      const start = Date.now();
-      const result = await pool.query('SELECT NOW(), version()');
-      const duration = Date.now() - start;
-      
-      return {
-        healthy: true,
-        time: result.rows[0].now,
-        version: result.rows[0].version,
-        responseTime: `${duration}ms`
-      };
-    } catch (error) {
-      logger.error('❌ Health check DB échoué:', error.message);
-      return {
-        healthy: false,
-        error: error.message,
-        databaseUrl: connectionString ? 'Set' : 'Not set'
-      };
-    }
-  },
-  
-  // Fermer proprement
-  close: async () => {
-    try {
-      await pool.end();
-      logger.info('✅ Pool PostgreSQL fermé');
-    } catch (error) {
-      logger.error('❌ Erreur fermeture pool:', error);
-    }
-  },
-  
-  // Exposer le pool pour les cas avancés
-  pool
-};
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  logger.info('SIGTERM reçu, fermeture graceful...');
+  server.close(() => {
+    logger.info('Serveur HTTP fermé');
+    db.close().then(() => {
+      process.exit(0);
+    });
+  });
+});
 
-module.exports = db;
+process.on('uncaughtException', (err) => {
+  logger.error('Exception non capturée:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Promise rejection non gérée:', reason);
+});
+
+module.exports = { app, server };
