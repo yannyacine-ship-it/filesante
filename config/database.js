@@ -1,25 +1,30 @@
 /**
- * Configuration et pool de connexion PostgreSQL
+ * Configuration et pool de connexion PostgreSQL - Version corrigée
  */
 
 const { Pool } = require('pg');
-const config = require('./index');
 const logger = require('../src/utils/logger');
 
-// Configuration du pool
-const poolConfig = config.database.url
-  ? { connectionString: config.database.url, ssl: config.env === 'production' ? { rejectUnauthorized: false } : false }
-  : {
-      host: config.database.host,
-      port: config.database.port,
-      database: config.database.name,
-      user: config.database.user,
-      password: config.database.password,
-      min: config.database.pool.min,
-      max: config.database.pool.max
-    };
+// Configuration directe depuis Railway
+const connectionString = process.env.DATABASE_URL;
 
-const pool = new Pool(poolConfig);
+// Log de débogage (sans afficher le mot de passe)
+if (connectionString) {
+  const safeUrl = connectionString.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@');
+  logger.info('Configuration DB chargée depuis DATABASE_URL:', { 
+    url: safeUrl,
+    env: process.env.NODE_ENV 
+  });
+} else {
+  logger.error('DATABASE_URL non définie dans les variables d\'environnement');
+}
+
+const pool = new Pool({
+  connectionString: connectionString,
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: false
+  } : false
+});
 
 // Event listeners
 pool.on('connect', () => {
@@ -37,10 +42,16 @@ const db = {
     try {
       const result = await pool.query(text, params);
       const duration = Date.now() - start;
-      logger.debug(`Requête exécutée en ${duration}ms`, { text: text.substring(0, 100), rows: result.rowCount });
+      logger.debug(`Requête exécutée en ${duration}ms`, { 
+        text: text.substring(0, 100), 
+        rows: result.rowCount 
+      });
       return result;
     } catch (error) {
-      logger.error('Erreur requête SQL', { text: text.substring(0, 100), error: error.message });
+      logger.error('Erreur requête SQL', { 
+        text: text.substring(0, 100), 
+        error: error.message 
+      });
       throw error;
     }
   },
@@ -81,10 +92,16 @@ const db = {
   healthCheck: async () => {
     try {
       const result = await pool.query('SELECT NOW()');
-      return !!result.rows[0];
+      return { 
+        healthy: true, 
+        time: result.rows[0].now 
+      };
     } catch (error) {
-      logger.error('Health check PostgreSQL échoué', error);
-      return false;
+      logger.error('Health check PostgreSQL échoué:', error.message);
+      return { 
+        healthy: false, 
+        error: error.message 
+      };
     }
   },
   
