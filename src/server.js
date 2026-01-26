@@ -1,304 +1,155 @@
 /**
- * FileSanté Backend - Serveur Principal
- * File virtuelle pour urgences hospitalières
+ * Configuration et pool de connexion PostgreSQL - Version Railway
  */
 
-const express = require('express');
-const http = require('http');
-const cors = require('cors');
-const helmet = require('helmet');
-const compression = require('compression');
-const rateLimit = require('express-rate-limit');
-const cookieParser = require('cookie-parser');
+const { Pool } = require('pg');
+const logger = require('../src/utils/logger');
 
-const config = require('../config');
-const db = require('../config/database');
-const logger = require('./utils/logger');
-const WebSocketService = require('./services/WebSocketService');
-const { startJobs } = require('./jobs/scheduler');
+// URL de connexion - PRIORITÉ ABSOLUE à DATABASE_URL
+const connectionString = process.env.DATABASE_URL;
 
-// Routes
-const patientsRoutes = require('./routes/patients');
-const hospitalsRoutes = require('./routes/hospitals');
-const authRoutes = require('./routes/auth');
-const { authenticateOptional } = require('./middleware/auth');
-
-// Créer l'application Express
-const app = express();
-const server = http.createServer(app);
-
-// ============================================
-// MIDDLEWARES
-// ============================================
-
-// Sécurité
-app.use(helmet({
-  contentSecurityPolicy: false // Désactiver pour permettre les QR codes inline
-}));
-
-// CORS
-app.use(cors({
-  origin: config.env === 'production' 
-    ? [config.urls.frontend] 
-    : '*',
-  credentials: true
-}));
-
-// Compression
-app.use(compression());
-
-// Trust proxy - IMPORTANT: Doit être défini AVANT le rate limiting
-// Requis pour Railway, Render et autres reverse proxy
-app.set('trust proxy', 1);
-
-// Rate limiting - Doit être APRÈS trust proxy
-const limiter = rateLimit({
-  windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.max,
-  message: { 
-    success: false, 
-    error: 'Trop de requêtes, veuillez réessayer plus tard' 
-  }
-});
-app.use('/api/', limiter);
-
-// Parsing JSON
-app.use(express.json({ limit: '1mb' }));
-
-// Servir le frontend
-app.use(express.static('frontend'));
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-// Logging des requêtes
-app.use((req, res, next) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    if (req.path.startsWith('/api/')) {
-      logger.logRequest(req, res, duration);
-    }
-  });
-  next();
-});
-
-// ============================================
-// ROUTES
-// ============================================
-
-// Health check
-app.get('/health', async (req, res) => {
-  const dbHealthy = await db.healthCheck();
-  
-  res.status(dbHealthy ? 200 : 503).json({
-    status: dbHealthy ? 'healthy' : 'unhealthy',
-    timestamp: new Date().toISOString(),
-    version: require('../package.json').version,
-    environment: config.env,
-    services: {
-      database: dbHealthy ? 'connected' : 'disconnected',
-      websocket: WebSocketService.getConnectedClients('*') >= 0 ? 'active' : 'inactive'
-    }
-  });
-});
-
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/patients', patientsRoutes);
-app.use('/api/hospitals', hospitalsRoutes);
-
-// Webhook Twilio pour status SMS
-app.post('/webhooks/twilio/status', express.urlencoded({ extended: false }), async (req, res) => {
+// Log de débogage (sans mot de passe)
+if (connectionString) {
   try {
-    const SmsService = require('./services/SmsService');
-    await SmsService.handleStatusCallback(req.body);
-    res.status(200).send('OK');
+    const url = new URL(connectionString);
+    const safeUrl = `${url.protocol}//${url.hostname}:${url.port}${url.pathname}`;
+    logger.info(`📦 Configuration DB: ${safeUrl}`);
   } catch (error) {
-    logger.error('Erreur webhook Twilio', error);
-    res.status(500).send('Error');
+    logger.info('📦 Configuration DB: URL définie');
   }
+} else {
+  logger.error('❌ DATABASE_URL non définie!');
+  logger.warn('⚠️  Le serveur utilisera les valeurs par défaut (localhost)');
+}
+
+// Configuration du pool
+const pool = new Pool({
+  connectionString: connectionString,
+  // SSL requis en production sur Railway
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: false
+  } : false,
+  // Optimisations pour Railway
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
-// Route pour les stats globales (admin)
-app.get('/api/admin/stats', async (req, res) => {
-  try {
-    const { rows } = await db.query(`
-      SELECT 
-        h.code,
-        h.name,
-        COUNT(*) FILTER (WHERE p.status IN ('pending', 'waiting', 'notified')) as active_patients,
-        ds.total_registered,
-        ds.total_returned,
-        ds.total_noshow,
-        ds.avg_wait_time_minutes
-      FROM hospitals h
-      LEFT JOIN patients p ON p.hospital_id = h.id
-      LEFT JOIN daily_stats ds ON ds.hospital_id = h.id AND ds.date = CURRENT_DATE
-      WHERE h.is_active = true
-      GROUP BY h.id, h.code, h.name, ds.total_registered, ds.total_returned, ds.total_noshow, ds.avg_wait_time_minutes
-    `);
-    
-    res.json({ success: true, data: rows });
-  } catch (error) {
-    logger.error('Erreur stats admin', error);
-    res.status(500).json({ success: false, error: 'Erreur serveur' });
-  }
+// Event listeners pour le débogage
+pool.on('connect', () => {
+  logger.debug('🔄 Nouvelle connexion au pool PostgreSQL');
 });
 
-// Route pour exécuter un job manuellement (admin)
-app.post('/api/admin/jobs/:jobName', async (req, res) => {
-  try {
-    const { runManually } = require('./jobs/scheduler');
-    await runManually(req.params.jobName);
-    res.json({ success: true, message: `Job ${req.params.jobName} exécuté` });
-  } catch (error) {
-    logger.error('Erreur exécution job', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
+pool.on('error', (err) => {
+  logger.error('❌ Erreur pool PostgreSQL:', err.message);
 });
 
-// 404
-app.use((req, res) => {
-  res.status(404).json({ 
-    success: false, 
-    error: 'Route non trouvée' 
-  });
+pool.on('acquire', () => {
+  logger.debug('📥 Client acquis du pool');
 });
 
-// Gestionnaire d'erreurs global
-app.use((err, req, res, next) => {
-  logger.error('Erreur non gérée', err);
-  
-  res.status(err.status || 500).json({
-    success: false,
-    error: config.env === 'production' 
-      ? 'Erreur serveur interne' 
-      : err.message
-  });
+pool.on('release', () => {
+  logger.debug('📤 Client libéré dans le pool');
 });
 
-// ============================================
-// DÉMARRAGE
-// ============================================
-
-async function start() {
-  try {
-    // Vérifier la connexion à la base de données
-    logger.info('Vérification de la connexion à la base de données...');
-    const dbConnected = await db.healthCheck();
-    
-    if (!dbConnected) {
-      throw new Error('Impossible de se connecter à la base de données');
-    }
-    logger.info('✅ Base de données connectée');
-
-    // ===========================================
-    // SEED AUTOMATIQUE AU DÉMARRAGE
-    // ===========================================
-
-    let seedExecuted = false;
-    let maxRetries = 3;
-
-    for (let attempt = 1; attempt <= maxRetries && !seedExecuted; attempt++) {
-      try {
-        logger.info(`🌱 Tentative ${attempt}/${maxRetries}: Vérification de la base de données...`);
-
-        const { rows: usersCheck } = await db.query(
-          'SELECT COUNT(*) as count FROM users;'
-        );
-
-        const userCount = parseInt(usersCheck[0].count);
-
-        if (userCount === 0) {
-          logger.warn('⚠️  Base de données vide - Exécution du seed...');
-
-          // Exécuter le seed avec require FRESH
-          delete require.cache[require.resolve('../migrations/seed')];
-
-          const seed = require('../migrations/seed');
-          await seed();
-
-          logger.info('✅ Seed terminé avec succès!');
-          seedExecuted = true;
-
-          // Vérifier que les users existent maintenant
-          const { rows: verify } = await db.query('SELECT COUNT(*) as count FROM users;');
-          logger.info(`✅ Utilisateurs créés: ${verify[0].count}`);
-        } else {
-          logger.info(`✅ Base de données déjà initialisée (${userCount} utilisateurs)`);
-          seedExecuted = true;
-          break; // Sortir de la boucle
-        }
-
-      } catch (seedError) {
-        logger.error(`❌ Erreur seed (tentative ${attempt}):`, seedError.message);
-
-        if (attempt === maxRetries) {
-          logger.error('❌ Impossible d\'exécuter le seed après ${maxRetries} tentatives');
-          // Ne pas crasher le serveur si le seed échoue
-        }
-
-        // Attendre avant de réessayer
-        await new Promise(resolve => setTimeout(resolve, 2000));
+// Helper pour les requêtes
+const db = {
+  // Exécuter une requête simple
+  query: async (text, params) => {
+    const start = Date.now();
+    try {
+      const result = await pool.query(text, params);
+      const duration = Date.now() - start;
+      
+      // Log seulement pour les requêtes longues ou en debug
+      if (duration > 1000 || process.env.LOG_LEVEL === 'debug') {
+        logger.debug(`📊 Requête (${duration}ms): ${text.substring(0, 50)}...`);
       }
+      
+      return result;
+    } catch (error) {
+      const duration = Date.now() - start;
+      logger.error('❌ Erreur requête SQL:', {
+        query: text.substring(0, 100),
+        params: params,
+        error: error.message,
+        duration: `${duration}ms`
+      });
+      throw error;
     }
-
-    // ===========================================
-
-    // Exécuter les migrations si nécessaire (en dev)
-    if (config.env !== 'production') {
-      logger.info('Exécution des migrations...');
-      const { runMigrations } = require('../migrations/run');
-      await runMigrations();
+  },
+  
+  // Obtenir un client dédié (pour les transactions)
+  getClient: async () => {
+    const client = await pool.connect();
+    
+    // Timeout de sécurité
+    const timeout = setTimeout(() => {
+      logger.warn('⏰ Timeout client DB - release forcé');
+      client.release();
+    }, 30000);
+    
+    // Override release pour clear le timeout
+    const originalRelease = client.release;
+    client.release = () => {
+      clearTimeout(timeout);
+      originalRelease.apply(client);
+    };
+    
+    return client;
+  },
+  
+  // Transaction helper
+  transaction: async (callback) => {
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
-    
-    // Initialiser WebSocket
-    WebSocketService.init(server);
-    
-    // Démarrer les jobs planifiés
-    startJobs();
-    
-    // Démarrer le serveur
-    server.listen(config.port, () => {
-      logger.info(`🏥 FileSanté Backend démarré`);
-      logger.info(`   Environment: ${config.env}`);
-      logger.info(`   Port: ${config.port}`);
-      logger.info(`   API: http://localhost:${config.port}/api`);
-      logger.info(`   WebSocket: ws://localhost:${config.port}/ws`);
-      logger.info(`   Health: http://localhost:${config.port}/health`);
-      logger.info(`   Base de données: ${seedExecuted ? '✅ initialisée' : '⚠️ vérification échouée'}`);
-    });
-    
-  } catch (error) {
-    logger.error('Erreur démarrage serveur', error);
-    process.exit(1);
-  }
-}
-
-// Gestion de l'arrêt propre
-process.on('SIGTERM', async () => {
-  logger.info('Signal SIGTERM reçu, arrêt en cours...');
+  },
   
-  server.close(() => {
-    logger.info('Serveur HTTP fermé');
-  });
+  // Health check amélioré
+  healthCheck: async () => {
+    try {
+      const start = Date.now();
+      const result = await pool.query('SELECT NOW(), version()');
+      const duration = Date.now() - start;
+      
+      return {
+        healthy: true,
+        time: result.rows[0].now,
+        version: result.rows[0].version,
+        responseTime: `${duration}ms`
+      };
+    } catch (error) {
+      logger.error('❌ Health check DB échoué:', error.message);
+      return {
+        healthy: false,
+        error: error.message,
+        databaseUrl: connectionString ? 'Set' : 'Not set'
+      };
+    }
+  },
   
-  await db.close();
+  // Fermer proprement
+  close: async () => {
+    try {
+      await pool.end();
+      logger.info('✅ Pool PostgreSQL fermé');
+    } catch (error) {
+      logger.error('❌ Erreur fermeture pool:', error);
+    }
+  },
   
-  const { stopJobs } = require('./jobs/scheduler');
-  stopJobs();
-  
-  process.exit(0);
-});
+  // Exposer le pool pour les cas avancés
+  pool
+};
 
-process.on('SIGINT', async () => {
-  logger.info('Signal SIGINT reçu, arrêt en cours...');
-  process.exit(0);
-});
-
-// Démarrer si c'est le fichier principal
-if (require.main === module) {
-  start();
-}
-
-module.exports = { app, server, start };
+module.exports = db;
