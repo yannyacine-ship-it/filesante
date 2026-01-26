@@ -10,14 +10,14 @@ const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT, 10) || 3000,
   
-  // Base de données
+  // Base de données - TOUJOURS utiliser DATABASE_URL d'abord
   database: {
-    url: process.env.DATABASE_URL,
+    url: process.env.DATABASE_URL, // Priorité 1
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT, 10) || 5432,
     name: process.env.DB_NAME || 'filesante',
-    user: process.env.DB_USER || 'filesante',
-    password: process.env.DB_PASSWORD || 'password',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || '',
     pool: {
       min: 2,
       max: 10
@@ -140,6 +140,14 @@ function validateConfig() {
       errors.push('Configuration base de données incomplète');
     }
   }
+  
+  // Log de débogage sécurisé
+  console.log('Configuration chargée:');
+  console.log('- Env:', config.env);
+  console.log('- DB URL définie:', !!config.database.url);
+  console.log('- DB Host:', config.database.host);
+  console.log('- DB Port:', config.database.port);
+  console.log('- DB User:', config.database.user);
   
   if (errors.length > 0) {
     console.error('Erreurs de configuration:');
