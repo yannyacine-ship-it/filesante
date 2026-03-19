@@ -108,13 +108,15 @@ app.get('/api/hospitals-list', (req, res) => {
 
 // ==================== FRONTEND ROUTES ====================
 
-// Route catch-all pour SPA - servir le frontend
+// Servir les fichiers frontend individuellement
 app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, '../frontend', req.path === '/' ? 'index.html' : req.path));
-  } else {
-    res.status(404).json({ success: false, message: 'Route API non trouvée' });
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ success: false, message: 'Route API non trouvée' });
   }
+  const filePath = path.join(__dirname, '../frontend', req.path);
+  res.sendFile(filePath, err => {
+    if (err) res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  });
 });
 
 // ==================== ERROR HANDLING ====================
