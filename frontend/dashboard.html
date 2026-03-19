@@ -636,14 +636,6 @@
     toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
   }
 
-  // ── AUTH CHECK ──
-  if (!sessionStorage.getItem('fs_user')) {
-    window.location.href = 'login.html';
-  }
-  const nurseRole = sessionStorage.getItem('fs_role') || 'Infirmière — Triage';
-  document.querySelector('.nurse-name') && (document.querySelector('.nurse-name').textContent = sessionStorage.getItem('fs_user') || 'Utilisateur');
-  document.querySelector('.nurse-role') && (document.querySelector('.nurse-role').textContent = nurseRole);
-
   // ── INIT ──
   renderQueue();
 </script>
