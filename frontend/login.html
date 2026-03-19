@@ -3,267 +3,147 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Connexion - FileSanté</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>FileSanté — Connexion</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    .gradient-bg {
-      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%);
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue-50: #EDF5FF; --blue-400: #3E8EF7; --blue-600: #1965D4; --blue-800: #0D3B8A;
+      --gray-50: #F8F7F5; --gray-100: #EDEDEA; --gray-200: #DDDCDA;
+      --gray-400: #9B9A94; --gray-700: #3D3D3A; --gray-900: #1A1A18;
+      --red-50: #FEF2F2; --red-600: #DC2626;
+      --white: #FFFFFF;
     }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: linear-gradient(135deg, #0D3B8A 0%, #1965D4 100%);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 20px; -webkit-font-smoothing: antialiased;
+    }
+    .card {
+      background: var(--white); border-radius: 24px;
+      padding: 40px 36px; width: 100%; max-width: 380px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+    }
+    .logo-row {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 28px;
+    }
+    .logo-text { font-size: 20px; font-weight: 600; color: var(--gray-900); }
+    .logo-text span { color: var(--blue-600); }
+    h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 26px; color: var(--gray-900); margin-bottom: 6px;
+    }
+    .subtitle { font-size: 14px; color: var(--gray-400); margin-bottom: 28px; }
+    .form-group { margin-bottom: 16px; }
+    label { font-size: 12px; font-weight: 600; color: var(--gray-700); display: block; margin-bottom: 6px; }
+    input {
+      width: 100%; padding: 11px 14px; border-radius: 10px;
+      border: 1.5px solid var(--gray-200); font-family: 'DM Sans', sans-serif;
+      font-size: 14px; color: var(--gray-900); outline: none; transition: border-color 0.15s;
+    }
+    input:focus { border-color: var(--blue-400); }
+    .error {
+      display: none; background: var(--red-50); color: var(--red-600);
+      font-size: 13px; padding: 10px 14px; border-radius: 9px; margin-bottom: 16px;
+    }
+    .error.show { display: block; }
+    .btn {
+      width: 100%; padding: 13px; border-radius: 10px; border: none;
+      background: var(--blue-600); color: white; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+      margin-top: 4px;
+    }
+    .btn:hover { background: var(--blue-800); transform: translateY(-1px); }
+    .demo-hint {
+      margin-top: 20px; padding: 12px 14px; background: var(--blue-50);
+      border-radius: 10px; font-size: 12px; color: var(--blue-600); line-height: 1.6;
+    }
+    .demo-hint strong { display: block; margin-bottom: 2px; }
+    .role-select {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px;
+    }
+    .role-btn {
+      padding: 10px; border-radius: 10px; border: 1.5px solid var(--gray-200);
+      background: var(--white); font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 500; color: var(--gray-400); cursor: pointer;
+      transition: all 0.15s; text-align: center;
+    }
+    .role-btn.active { border-color: var(--blue-600); background: var(--blue-50); color: var(--blue-600); }
   </style>
 </head>
-<body class="min-h-screen gradient-bg flex items-center justify-center p-4">
-
-  <div class="w-full max-w-md">
-    <!-- Logo et titre -->
-    <div class="text-center mb-8">
-      <div class="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-lg mb-4">
-        <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-        </svg>
-      </div>
-      <h1 class="text-3xl font-bold text-white">FileSanté</h1>
-      <p class="text-blue-100 mt-2">Portail professionnel</p>
-    </div>
-
-    <!-- Formulaire de connexion -->
-    <div class="bg-white rounded-2xl shadow-xl p-8">
-      <h2 class="text-2xl font-semibold text-gray-800 mb-6">Connexion</h2>
-
-      <!-- Message d'erreur -->
-      <div id="errorMessage" class="hidden mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-        <div class="flex items-center text-red-600">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          <span id="errorText"></span>
-        </div>
-      </div>
-
-      <!-- Message de succès -->
-      <div id="successMessage" class="hidden mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-        <div class="flex items-center text-green-600">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-          </svg>
-          <span id="successText">Connexion réussie ! Redirection...</span>
-        </div>
-      </div>
-
-      <form id="loginForm">
-        <!-- Email -->
-        <div class="mb-4">
-          <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-            Adresse courriel
-          </label>
-          <div class="relative">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
-              </svg>
-            </span>
-            <input type="email" id="email" name="email" required
-                   class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                   placeholder="admin@filesante.ca"
-                   value="admin@filesante.ca">
-          </div>
-        </div>
-
-        <!-- Mot de passe -->
-        <div class="mb-6">
-          <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-            Mot de passe
-          </label>
-          <div class="relative">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-              </svg>
-            </span>
-            <input type="password" id="password" name="password" required
-                   class="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                   placeholder="••••••••"
-                   value="admin123">
-            <button type="button" id="togglePassword"
-                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Bouton connexion -->
-        <button type="submit" id="submitBtn"
-                class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center">
-          <span id="btnText">Se connecter</span>
-          <svg id="btnSpinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        </button>
-      </form>
-
-      <!-- Séparateur -->
-      <div class="relative my-6">
-        <div class="absolute inset-0 flex items-center">
-          <div class="w-full border-t border-gray-200"></div>
-        </div>
-        <div class="relative flex justify-center text-sm">
-          <span class="px-4 bg-white text-gray-500">ou</span>
-        </div>
-      </div>
-
-      <!-- Comptes démo -->
-      <div class="space-y-3">
-        <p class="text-sm text-gray-500 text-center">Comptes de démonstration</p>
-        <div class="grid grid-cols-2 gap-3">
-          <button type="button" onclick="fillDemo('admin')"
-                  class="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            <span class="text-lg mr-2">👤</span>
-            <span class="text-sm font-medium text-gray-700">Admin</span>
-          </button>
-          <button type="button" onclick="fillDemo('nurse')"
-                  class="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            <span class="text-lg mr-2">👩‍⚕️</span>
-            <span class="text-sm font-medium text-gray-700">Infirmière</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <p class="text-center text-blue-100 text-sm mt-6">
-      © 2024 FileSanté - File virtuelle pour urgences hospitalières
-    </p>
+<body>
+<div class="card">
+  <div class="logo-row">
+    <svg width="32" height="32" viewBox="0 0 38 38" fill="none">
+      <rect width="38" height="38" rx="9" fill="#1965D4"/>
+      <rect x="16" y="8" width="6" height="22" rx="3" fill="white"/>
+      <rect x="8" y="16" width="22" height="6" rx="3" fill="white"/>
+    </svg>
+    <span class="logo-text">File<span>Santé</span></span>
   </div>
 
-  <script>
-    // Configuration API - URL directe
-    const API_URL = window.location.origin + '/api';
-    
-    // Éléments du DOM
-    const loginForm = document.getElementById('loginForm');
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    const submitBtn = document.getElementById('submitBtn');
-    const btnText = document.getElementById('btnText');
-    const btnSpinner = document.getElementById('btnSpinner');
-    const errorMessage = document.getElementById('errorMessage');
-    const errorText = document.getElementById('errorText');
-    const successMessage = document.getElementById('successMessage');
-    const togglePassword = document.getElementById('togglePassword');
+  <h1>Connexion</h1>
+  <p class="subtitle">Accès réservé au personnel hospitalier</p>
 
-    // Remplir les champs démo
-    function fillDemo(type) {
-      if (type === 'admin') {
-        emailInput.value = 'admin@filesante.ca';
-        passwordInput.value = 'admin123';
-      } else {
-        emailInput.value = 'nurse@hmr.filesante.ca';
-        passwordInput.value = 'nurse123';
-      }
+  <div class="role-select">
+    <button class="role-btn active" onclick="setRole('infirmiere', this)" id="role-inf">
+      🩺 Infirmière
+    </button>
+    <button class="role-btn" onclick="setRole('medecin', this)" id="role-med">
+      👨‍⚕️ Médecin
+    </button>
+  </div>
+
+  <div id="errorMsg" class="error">Identifiants incorrects. Réessayez.</div>
+
+  <div class="form-group">
+    <label>Identifiant</label>
+    <input type="text" id="username" placeholder="Ex: infirmiere.triage" autocomplete="username">
+  </div>
+  <div class="form-group">
+    <label>Mot de passe</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter') login()">
+  </div>
+
+  <button class="btn" onclick="login()">Se connecter</button>
+
+  <div class="demo-hint">
+    <strong>Comptes démo :</strong>
+    Infirmière : <code>infirmiere</code> / <code>filesante2025</code><br>
+    Médecin : <code>medecin</code> / <code>filesante2025</code>
+  </div>
+</div>
+
+<script>
+  let selectedRole = 'infirmiere';
+  function setRole(role, btn) {
+    selectedRole = role;
+    document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  const USERS = {
+    'infirmiere': { pass: 'filesante2025', role: 'Infirmière — Triage', redirect: 'hospital-dashboard.html' },
+    'medecin':    { pass: 'filesante2025', role: 'Médecin',             redirect: 'hospital-dashboard.html' },
+    'admin':      { pass: 'admin2025',     role: 'Administrateur',      redirect: 'hospital-dashboard.html' },
+  };
+
+  function login() {
+    const u = document.getElementById('username').value.trim().toLowerCase();
+    const p = document.getElementById('password').value;
+    const err = document.getElementById('errorMsg');
+    if (USERS[u] && USERS[u].pass === p) {
+      sessionStorage.setItem('fs_user', u);
+      sessionStorage.setItem('fs_role', USERS[u].role);
+      err.classList.remove('show');
+      window.location.href = USERS[u].redirect;
+    } else {
+      err.classList.add('show');
+      document.getElementById('password').value = '';
     }
-
-    // Toggle password visibility
-    togglePassword.addEventListener('click', function() {
-      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-      passwordInput.setAttribute('type', type);
-    });
-
-    // Vérifier si déjà connecté
-    const existingToken = localStorage.getItem('filesante_token');
-    if (existingToken) {
-      // Vérifier que le token est valide
-      fetch(API_URL + '/auth/me', {
-        headers: { 'Authorization': 'Bearer ' + existingToken }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          window.location.href = 'dashboard.html';
-        }
-      })
-      .catch(() => {
-        localStorage.removeItem('filesante_token');
-        localStorage.removeItem('filesante_user');
-      });
-    }
-
-    // Soumission du formulaire
-    loginForm.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      // Masquer les messages
-      errorMessage.classList.add('hidden');
-      successMessage.classList.add('hidden');
-      
-      // État loading
-      submitBtn.disabled = true;
-      btnText.textContent = 'Connexion...';
-      btnSpinner.classList.remove('hidden');
-
-      const email = emailInput.value.trim();
-      const password = passwordInput.value;
-
-      try {
-        console.log('Tentative de connexion à:', API_URL + '/auth/login');
-        
-        const response = await fetch(API_URL + '/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ email, password })
-        });
-
-        console.log('Response status:', response.status);
-        
-        const result = await response.json();
-        console.log('Response data:', result);
-
-        if (result.success) {
-          // Sauvegarder le token
-          localStorage.setItem('filesante_token', result.data.token);
-          localStorage.setItem('filesante_user', JSON.stringify(result.data.user));
-          
-          // Afficher succès
-          successMessage.classList.remove('hidden');
-          
-          // Rediriger vers le dashboard
-          setTimeout(() => {
-            window.location.href = 'dashboard.html';
-          }, 1000);
-        } else {
-          // Afficher erreur
-          errorText.textContent = result.error || 'Email ou mot de passe incorrect';
-          errorMessage.classList.remove('hidden');
-        }
-      } catch (error) {
-        console.error('Login error:', error);
-        errorText.textContent = 'Erreur de connexion au serveur. Veuillez réessayer.';
-        errorMessage.classList.remove('hidden');
-      } finally {
-        submitBtn.disabled = false;
-        btnText.textContent = 'Se connecter';
-        btnSpinner.classList.add('hidden');
-      }
-    });
-
-    // Focus sur email
-    emailInput.focus();
-    
-    console.log('FileSanté Login Page loaded');
-    console.log('API URL:', API_URL);
-  </script>
+  }
+</script>
 </body>
 </html>
