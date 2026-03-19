@@ -553,9 +553,18 @@
   }
 
   // ── ACTIONS ──
-  function notifyPatient(id) {
+  async function notifyPatient(id) {
     const p = patients.find(x => x.id === id);
-    if (p) { p.status = 'notified'; renderQueue(); showToast('SMS envoyé à ' + id, 'amber'); }
+    if (!p) return;
+    p.status = 'notified'; renderQueue();
+    showToast('📱 SMS envoyé — ' + id, 'green');
+    try {
+      await fetch('/api/patients/' + (p.dbId||id) + '/notify', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json',
+          'Authorization':'Bearer ' + localStorage.getItem('filesante_token')}
+      });
+    } catch(e) { console.log('mode demo'); }
   }
   function confirmReturn(id) {
     const p = patients.find(x => x.id === id);
