@@ -3,301 +3,661 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FileSanté - File virtuelle pour urgences hospitalières</title>
-  <meta name="description" content="Système de file d'attente virtuelle pour les urgences hospitalières de Montréal. Inscrivez-vous et attendez chez vous.">
-  
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>FileSanté — File virtuelle pour urgences hospitalières</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    .gradient-bg {
-      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 25%, #3b82f6 50%, #0ea5e9 75%, #06b6d4 100%);
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue-50: #EDF5FF;
+      --blue-100: #C8DFFF;
+      --blue-400: #3E8EF7;
+      --blue-600: #1965D4;
+      --blue-800: #0D3B8A;
+      --teal-50: #E0F8F4;
+      --teal-400: #1DB89A;
+      --teal-600: #0F7A68;
+      --gray-50: #F8F7F5;
+      --gray-100: #EDEDEA;
+      --gray-400: #9B9A94;
+      --gray-700: #3D3D3A;
+      --gray-900: #1A1A18;
+      --white: #FFFFFF;
+      --font-sans: 'DM Sans', system-ui, sans-serif;
+      --font-serif: 'DM Serif Display', Georgia, serif;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 22px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.10), 0 4px 12px rgba(0,0,0,0.06);
     }
-    .card-hover:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--gray-50);
+      color: var(--gray-700);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
     }
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--gray-100);
+      padding: 0 24px;
     }
-    .float { animation: float 3s ease-in-out infinite; }
+    .nav-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo-mark {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 38px; height: 38px;
+    }
+    .logo-text {
+      font-size: 19px; font-weight: 600; letter-spacing: -0.4px;
+      color: var(--gray-900);
+    }
+    .logo-text span { color: var(--blue-600); }
+
+    .nav-links {
+      display: flex; align-items: center; gap: 28px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 14px; font-weight: 500; color: var(--gray-400);
+      text-decoration: none; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--gray-900); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 10px 20px;
+      border-radius: var(--radius-sm); font-family: var(--font-sans);
+      font-size: 14px; font-weight: 500; cursor: pointer;
+      text-decoration: none; transition: all 0.18s; border: none;
+    }
+    .btn-primary {
+      background: var(--blue-600); color: var(--white);
+      box-shadow: 0 1px 3px rgba(25,101,212,0.3);
+    }
+    .btn-primary:hover { background: var(--blue-800); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(25,101,212,0.35); }
+    .btn-secondary {
+      background: var(--white); color: var(--gray-700);
+      border: 1.5px solid var(--gray-100);
+    }
+    .btn-secondary:hover { border-color: var(--gray-400); }
+    .btn-lg { padding: 14px 28px; font-size: 15px; border-radius: var(--radius-md); }
+    .btn-xl { padding: 16px 36px; font-size: 16px; border-radius: var(--radius-md); }
+
+    /* ── HERO ── */
+    .hero {
+      max-width: 1100px; margin: 0 auto;
+      padding: 80px 24px 60px;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 60px; align-items: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--blue-50); color: var(--blue-600);
+      border: 1px solid var(--blue-100);
+      border-radius: 100px; padding: 5px 12px 5px 8px;
+      font-size: 12px; font-weight: 500; margin-bottom: 20px;
+    }
+    .hero-badge::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--blue-400); animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.3); }
+    }
+    .hero h1 {
+      font-family: var(--font-serif); font-size: clamp(36px, 4vw, 52px);
+      line-height: 1.12; letter-spacing: -0.5px;
+      color: var(--gray-900); margin-bottom: 18px;
+    }
+    .hero h1 em { font-style: italic; color: var(--blue-600); }
+    .hero p {
+      font-size: 17px; line-height: 1.7; color: var(--gray-400);
+      margin-bottom: 32px; max-width: 440px;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    .hero-stats {
+      display: flex; gap: 28px; margin-top: 40px; padding-top: 28px;
+      border-top: 1px solid var(--gray-100);
+    }
+    .stat-item {}
+    .stat-number {
+      font-size: 24px; font-weight: 600; color: var(--gray-900);
+      letter-spacing: -0.5px; line-height: 1;
+    }
+    .stat-label { font-size: 12px; color: var(--gray-400); margin-top: 3px; }
+
+    /* ── HERO VISUAL ── */
+    .hero-visual {
+      position: relative;
+    }
+    .phone-mockup {
+      background: var(--white);
+      border-radius: 32px;
+      box-shadow: var(--shadow-lg), 0 0 0 1px rgba(0,0,0,0.06);
+      overflow: hidden;
+      max-width: 280px;
+      margin: 0 auto;
+    }
+    .phone-header {
+      background: linear-gradient(135deg, var(--blue-600) 0%, #1550C0 100%);
+      padding: 24px 20px 32px;
+      color: white;
+    }
+    .phone-header-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .phone-logo { font-size: 13px; font-weight: 600; letter-spacing: -0.3px; }
+    .phone-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.5); }
+    .phone-title { font-size: 20px; font-weight: 300; letter-spacing: -0.3px; margin-bottom: 4px; }
+    .phone-subtitle { font-size: 12px; opacity: 0.7; }
+    .phone-body { padding: 18px; }
+    .queue-card {
+      background: var(--gray-50); border-radius: var(--radius-sm);
+      padding: 14px; margin-bottom: 10px;
+      border: 1px solid var(--gray-100);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .queue-card:last-child { margin-bottom: 0; }
+    .queue-position {
+      font-size: 28px; font-weight: 600; color: var(--blue-600);
+      letter-spacing: -1px; line-height: 1;
+    }
+    .queue-label { font-size: 10px; color: var(--gray-400); margin-top: 1px; }
+    .queue-time {
+      font-size: 12px; font-weight: 500; color: var(--gray-700);
+      text-align: right;
+    }
+    .queue-time-label { font-size: 10px; color: var(--gray-400); }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 10px; border-radius: 100px;
+      font-size: 11px; font-weight: 500;
+    }
+    .status-waiting { background: var(--blue-50); color: var(--blue-600); }
+    .status-notified { background: #FFF8E6; color: #B45309; }
+    .status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+    .floating-card {
+      position: absolute;
+      background: var(--white);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      padding: 12px 16px;
+      font-size: 12px;
+      min-width: 160px;
+    }
+    .float-1 { top: 30px; right: -20px; }
+    .float-2 { bottom: 60px; left: -20px; }
+    .float-icon { font-size: 16px; margin-bottom: 4px; }
+    .float-title { font-weight: 600; color: var(--gray-900); font-size: 12px; }
+    .float-sub { color: var(--gray-400); font-size: 11px; margin-top: 1px; }
+
+    /* ── SECTION ── */
+    section { padding: 80px 24px; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--blue-600); margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: var(--font-serif); font-size: clamp(28px, 3vw, 40px);
+      line-height: 1.18; color: var(--gray-900); margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 17px; color: var(--gray-400); max-width: 520px; line-height: 1.7;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .how-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 24px; margin-top: 48px;
+    }
+    .step-card {
+      background: var(--white); border-radius: var(--radius-lg);
+      padding: 28px; box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-100);
+      position: relative; overflow: hidden;
+    }
+    .step-card::before {
+      content: attr(data-step);
+      position: absolute; top: -12px; right: 20px;
+      font-size: 96px; font-weight: 700; color: var(--gray-100);
+      line-height: 1; pointer-events: none;
+      font-family: var(--font-serif);
+    }
+    .step-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--blue-50); display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+    }
+    .step-title {
+      font-size: 16px; font-weight: 600; color: var(--gray-900);
+      margin-bottom: 8px;
+    }
+    .step-desc { font-size: 14px; color: var(--gray-400); line-height: 1.6; }
+    .step-time {
+      display: inline-block; margin-top: 14px;
+      background: var(--teal-50); color: var(--teal-600);
+      font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 100px;
+    }
+
+    /* ── HOSPITALS ── */
+    .hospitals-section { background: var(--white); }
+    .hospitals-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 16px; margin-top: 40px;
+    }
+    .hospital-card {
+      border: 1.5px solid var(--gray-100); border-radius: var(--radius-md);
+      padding: 20px; display: flex; align-items: center; gap: 16px;
+      transition: all 0.2s;
+    }
+    .hospital-card:hover {
+      border-color: var(--blue-400); box-shadow: 0 0 0 3px var(--blue-50);
+    }
+    .hospital-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: var(--blue-600); display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .hospital-name { font-size: 14px; font-weight: 600; color: var(--gray-900); }
+    .hospital-addr { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+
+    /* ── PORTALS ── */
+    .portals-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 24px; margin-top: 48px;
+    }
+    .portal-card {
+      border-radius: var(--radius-lg); padding: 36px;
+      box-shadow: var(--shadow-md); text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: block;
+    }
+    .portal-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+    .portal-patient { background: linear-gradient(135deg, var(--blue-600) 0%, #1550C0 100%); color: white; }
+    .portal-hospital { background: var(--gray-900); color: white; }
+    .portal-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: rgba(255,255,255,0.15); display: flex; align-items: center;
+      justify-content: center; margin-bottom: 20px;
+    }
+    .portal-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
+      text-transform: uppercase; opacity: 0.6; margin-bottom: 8px;
+    }
+    .portal-title { font-family: var(--font-serif); font-size: 24px; margin-bottom: 10px; }
+    .portal-desc { font-size: 14px; opacity: 0.7; line-height: 1.6; margin-bottom: 24px; }
+    .portal-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 14px; font-weight: 500; opacity: 0.9;
+    }
+    .portal-link svg { transition: transform 0.2s; }
+    .portal-card:hover .portal-link svg { transform: translateX(4px); }
+
+    /* ── ANALYTICS CTA ── */
+    .analytics-cta {
+      background: linear-gradient(135deg, #0A1628 0%, #0D2650 100%);
+      border-radius: var(--radius-lg);
+      padding: 60px 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 40px; margin-top: 48px;
+    }
+    .analytics-text h3 {
+      font-family: var(--font-serif); font-size: 30px; color: white; margin-bottom: 10px;
+    }
+    .analytics-text p { color: rgba(255,255,255,0.55); font-size: 15px; max-width: 380px; }
+    .btn-white {
+      background: white; color: var(--gray-900);
+    }
+    .btn-white:hover { background: var(--gray-50); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--white); border-top: 1px solid var(--gray-100);
+      padding: 32px 24px;
+    }
+    .footer-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-copy { font-size: 13px; color: var(--gray-400); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: var(--gray-400); text-decoration: none; }
+    .footer-links a:hover { color: var(--gray-900); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .hero { grid-template-columns: 1fr; gap: 40px; padding: 48px 20px 40px; }
+      .hero-visual { display: none; }
+      .how-grid { grid-template-columns: 1fr; }
+      .hospitals-grid { grid-template-columns: 1fr; }
+      .portals-grid { grid-template-columns: 1fr; }
+      .analytics-cta { flex-direction: column; padding: 36px 28px; }
+      .nav-links { display: none; }
+      .footer-inner { flex-direction: column; gap: 16px; text-align: center; }
+    }
   </style>
 </head>
-<body class="min-h-screen">
+<body>
 
-  <!-- Hero Section -->
-  <header class="gradient-bg text-white">
-    <nav class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-      <div class="flex items-center">
-        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="logo-mark">
+      <!-- FileSanté Logo SVG -->
+      <svg class="logo-icon" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="38" height="38" rx="10" fill="#1965D4"/>
+        <!-- Cross symbol -->
+        <rect x="16" y="8" width="6" height="22" rx="3" fill="white"/>
+        <rect x="8" y="16" width="22" height="6" rx="3" fill="white"/>
+        <!-- Small connectivity dots -->
+        <circle cx="10" cy="10" r="2.5" fill="rgba(255,255,255,0.35)"/>
+        <circle cx="28" cy="10" r="2.5" fill="rgba(255,255,255,0.35)"/>
+        <circle cx="10" cy="28" r="2.5" fill="rgba(255,255,255,0.35)"/>
+        <circle cx="28" cy="28" r="2.5" fill="rgba(255,255,255,0.35)"/>
+      </svg>
+      <span class="logo-text">File<span>Santé</span></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#comment">Comment ça marche</a></li>
+      <li><a href="#hopitaux">Hôpitaux</a></li>
+      <li><a href="#portails">Portails</a></li>
+    </ul>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <a href="hospital-dashboard.html" class="btn btn-secondary">Portail hôpital</a>
+      <a href="patient.html" class="btn btn-primary">Portail patient</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div style="background: white; border-bottom: 1px solid var(--gray-100);">
+  <div class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">Projet pilote — Montréal 2025</div>
+      <h1>L'urgence, sans <em>l'attente</em> inutile</h1>
+      <p>FileSanté permet aux patients P4–P5 de rentrer chez eux et d'être rappelés par SMS quand leur tour approche — sans perdre leur place.</p>
+      <div class="hero-actions">
+        <a href="patient.html" class="btn btn-primary btn-lg">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          Accéder à ma file
+        </a>
+        <a href="hospital-dashboard.html" class="btn btn-secondary btn-lg">Dashboard hôpital</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-item">
+          <div class="stat-number">45 min</div>
+          <div class="stat-label">Notif. avant votre tour</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">4</div>
+          <div class="stat-label">Hôpitaux partenaires</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-number">0</div>
+          <div class="stat-label">App à installer</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone Mockup -->
+    <div class="hero-visual">
+      <div class="phone-mockup">
+        <div class="phone-header">
+          <div class="phone-header-top">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <svg width="18" height="18" viewBox="0 0 38 38" fill="none">
+                <rect width="38" height="38" rx="8" fill="rgba(255,255,255,0.2)"/>
+                <rect x="16" y="8" width="6" height="22" rx="3" fill="white"/>
+                <rect x="8" y="16" width="22" height="6" rx="3" fill="white"/>
+              </svg>
+              <span class="phone-logo">FileSanté</span>
+            </div>
+            <div class="phone-dot"></div>
+          </div>
+          <div class="phone-title">Hôpital Maisonneuve-<br>Rosemont</div>
+          <div class="phone-subtitle">Urgences — Secteur P4/P5</div>
+        </div>
+        <div class="phone-body">
+          <div class="queue-card">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:38px; height:38px; border-radius:50%; background:var(--blue-50); display:flex; align-items:center; justify-content:center;">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#1965D4" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              </div>
+              <div>
+                <div style="font-size:13px; font-weight:600; color:var(--gray-900);">Vous êtes dans la file</div>
+                <div style="font-size:11px; color:var(--gray-400);">HMR — Urgences P4/P5</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 11px; color: var(--gray-400); margin-bottom: 6px;">Statut actuel</div>
+            <span class="status-pill status-waiting">
+              <span class="status-dot"></span>En attente à domicile
+            </span>
+          </div>
+          <div style="background: #FFF8E6; border-radius: 8px; padding: 12px; border: 1px solid #FDE68A;">
+            <div style="font-size: 11px; font-weight: 600; color: #B45309; margin-bottom: 3px;">⏰ Notification dans ~1h30</div>
+            <div style="font-size: 11px; color: #92400E;">Vous recevrez un SMS quand votre tour approche</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating cards -->
+      <div class="floating-card float-1">
+        <div class="float-icon">📱</div>
+        <div class="float-title">SMS envoyé</div>
+        <div class="float-sub">Revenez dans 45 min</div>
+      </div>
+      <div class="floating-card float-2">
+        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+          <div style="width:8px; height:8px; border-radius:50%; background: var(--teal-400);"></div>
+          <span style="font-size:11px; font-weight:600; color:var(--gray-900);">7 patients</span>
+        </div>
+        <div class="float-sub">Rentrés chez eux ce soir</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section id="comment">
+  <div class="section-inner">
+    <div class="section-label">Processus</div>
+    <h2 class="section-title">Simple pour tout le monde</h2>
+    <p class="section-sub">Trois étapes pour libérer les salles d'attente sans perdre votre place dans la file.</p>
+
+    <div class="how-grid">
+      <div class="step-card" data-step="1">
+        <div class="step-icon">
+          <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#1965D4" stroke-width="2">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
           </svg>
         </div>
-        <span class="ml-3 text-xl font-bold">FileSanté</span>
-      </div>
-      
-      <div class="flex items-center space-x-4">
-        <a href="login.html" class="text-white hover:text-blue-100 transition-colors">Connexion</a>
-        <a href="#demo" class="px-4 py-2 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition-colors">
-          Démo
-        </a>
-      </div>
-    </nav>
-
-    <div class="max-w-7xl mx-auto px-4 py-20 text-center">
-      <h1 class="text-4xl md:text-6xl font-extrabold mb-6">
-        Attendez chez vous,<br>pas à l'urgence
-      </h1>
-      <p class="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto mb-8">
-        File d'attente virtuelle pour les urgences hospitalières de Montréal.
-        Inscrivez-vous, rentrez chez vous, revenez quand c'est votre tour.
-      </p>
-      
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <a href="#how-it-works" 
-           class="px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all shadow-lg">
-          Comment ça marche?
-        </a>
-        <a href="login.html" 
-           class="px-8 py-4 border-2 border-white text-white font-semibold rounded-xl hover:bg-white hover:text-blue-600 transition-all">
-          Accès professionnel
-        </a>
+        <div class="step-title">Triage par l'infirmière</div>
+        <div class="step-desc">L'infirmière ajoute le patient P4/P5 à la file virtuelle en 15 secondes et génère un QR code unique.</div>
+        <div class="step-time">⚡ 15 secondes</div>
       </div>
 
-      <!-- Stats -->
-      <div class="grid grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto">
+      <div class="step-card" data-step="2">
+        <div class="step-icon">
+          <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#1965D4" stroke-width="2">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>
+          </svg>
+        </div>
+        <div class="step-title">Patient scanne & rentre</div>
+        <div class="step-desc">Le patient scanne le QR, entre son numéro de téléphone, et peut rentrer chez lui. Aucune app à installer.</div>
+        <div class="step-time">⚡ 30 secondes</div>
+      </div>
+
+      <div class="step-card" data-step="3">
+        <div class="step-icon">
+          <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="#1965D4" stroke-width="2">
+            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.82 19.79 19.79 0 01.01 2.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/>
+          </svg>
+        </div>
+        <div class="step-title">SMS 45 min avant</div>
+        <div class="step-desc">Le patient reçoit un SMS automatique quand son tour est imminent. Il revient à temps, sans attente inutile.</div>
+        <div class="step-time">⚡ Automatique</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOSPITALS -->
+<section id="hopitaux" class="hospitals-section">
+  <div class="section-inner">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:20px;">
+      <div>
+        <div class="section-label">Réseau</div>
+        <h2 class="section-title">Hôpitaux partenaires</h2>
+        <p class="section-sub">FileSanté est actuellement déployé dans 4 hôpitaux de Montréal.</p>
+      </div>
+    </div>
+
+    <div class="hospitals-grid">
+      <div class="hospital-card">
+        <div class="hospital-icon">
+          <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+            <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+        </div>
         <div>
-          <p class="text-4xl font-bold">4h</p>
-          <p class="text-blue-100">Temps moyen économisé</p>
+          <div class="hospital-name">Hôpital Maisonneuve-Rosemont</div>
+          <div class="hospital-addr">5415 boul. de l'Assomption · HMR</div>
+        </div>
+      </div>
+
+      <div class="hospital-card">
+        <div class="hospital-icon">
+          <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+            <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
         </div>
         <div>
-          <p class="text-4xl font-bold">92%</p>
-          <p class="text-blue-100">Taux de retour</p>
+          <div class="hospital-name">Hôpital Notre-Dame</div>
+          <div class="hospital-addr">1560 rue Sherbrooke Est · HND</div>
+        </div>
+      </div>
+
+      <div class="hospital-card">
+        <div class="hospital-icon" style="background: var(--teal-600);">
+          <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+            <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
         </div>
         <div>
-          <p class="text-4xl font-bold">4</p>
-          <p class="text-blue-100">Hôpitaux partenaires</p>
+          <div class="hospital-name">Hôpital du Sacré-Cœur</div>
+          <div class="hospital-addr">5400 boul. Gouin Ouest · HSC</div>
+        </div>
+      </div>
+
+      <div class="hospital-card">
+        <div class="hospital-icon" style="background: var(--teal-600);">
+          <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+            <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+        </div>
+        <div>
+          <div class="hospital-name">Hôpital Général de Montréal</div>
+          <div class="hospital-addr">1650 av. Cedar · HGM</div>
         </div>
       </div>
     </div>
+  </div>
+</section>
 
-    <!-- Wave -->
-    <svg class="w-full h-16 -mb-1" viewBox="0 0 1440 100" fill="none" preserveAspectRatio="none">
-      <path d="M0 0L60 10C120 20 240 40 360 50C480 60 600 60 720 53.3C840 47 960 33 1080 30C1200 27 1320 33 1380 36.7L1440 40V100H1380C1320 100 1200 100 1080 100C960 100 840 100 720 100C600 100 480 100 360 100C240 100 120 100 60 100H0V0Z" fill="white"/>
-    </svg>
-  </header>
+<!-- PORTALS -->
+<section id="portails">
+  <div class="section-inner">
+    <div class="section-label">Accès</div>
+    <h2 class="section-title">Choisissez votre portail</h2>
 
-  <!-- How it works -->
-  <section id="how-it-works" class="py-20 bg-white">
-    <div class="max-w-7xl mx-auto px-4">
-      <h2 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-4">Comment ça fonctionne?</h2>
-      <p class="text-xl text-gray-500 text-center mb-12 max-w-2xl mx-auto">
-        Un processus simple en 4 étapes pour éviter l'attente interminable à l'urgence.
-      </p>
-
-      <div class="grid md:grid-cols-4 gap-8">
-        <!-- Step 1 -->
-        <div class="text-center">
-          <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span class="text-2xl font-bold text-blue-600">1</span>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-800 mb-2">Triage normal</h3>
-          <p class="text-gray-500">
-            Vous êtes évalué(e) au triage. Si vous êtes P4 ou P5, on vous propose FileSanté.
-          </p>
+    <div class="portals-grid">
+      <a href="patient.html" class="portal-card portal-patient">
+        <div class="portal-icon">
+          <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
         </div>
-
-        <!-- Step 2 -->
-        <div class="text-center">
-          <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span class="text-2xl font-bold text-blue-600">2</span>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-800 mb-2">Scan du QR code</h3>
-          <p class="text-gray-500">
-            Scannez le code QR avec votre téléphone et entrez votre numéro de mobile.
-          </p>
+        <div class="portal-label">Portail</div>
+        <div class="portal-title">Patient</div>
+        <div class="portal-desc">Scannez votre QR code, suivez votre position en temps réel et recevez votre notification SMS.</div>
+        <div class="portal-link">
+          Accéder
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </div>
+      </a>
 
-        <!-- Step 3 -->
-        <div class="text-center">
-          <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span class="text-2xl font-bold text-blue-600">3</span>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-800 mb-2">Rentrez chez vous</h3>
-          <p class="text-gray-500">
-            Attendez confortablement chez vous. Suivez votre position en temps réel.
-          </p>
+      <a href="hospital-dashboard.html" class="portal-card portal-hospital">
+        <div class="portal-icon">
+          <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
         </div>
-
-        <!-- Step 4 -->
-        <div class="text-center">
-          <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span class="text-2xl font-bold text-blue-600">4</span>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-800 mb-2">Notification SMS</h3>
-          <p class="text-gray-500">
-            Recevez un SMS 45 minutes avant votre passage. Revenez à l'urgence.
-          </p>
+        <div class="portal-label">Portail</div>
+        <div class="portal-title">Hôpital & Triage</div>
+        <div class="portal-desc">Gérez la file virtuelle, générez des QR codes et notifiez les patients depuis le poste infirmier.</div>
+        <div class="portal-link">
+          Accéder
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Demo Section -->
-  <section id="demo" class="py-20 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4">
-      <h2 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-4">Essayez la démo</h2>
-      <p class="text-xl text-gray-500 text-center mb-12">
-        Explorez les différentes interfaces du système.
-      </p>
-
-      <div class="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-        <!-- Dashboard -->
-        <a href="login.html" 
-           class="bg-white rounded-2xl p-6 shadow-lg card-hover transition-all duration-300 block">
-          <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
-            <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-            </svg>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Dashboard Hôpital</h3>
-          <p class="text-gray-500 mb-4">
-            Interface pour les infirmières. Gestion de la file, création de patients, notifications.
-          </p>
-          <span class="text-blue-600 font-medium">Accéder →</span>
-        </a>
-
-        <!-- Patient -->
-        <a href="patient.html?token=DEMO123" 
-           class="bg-white rounded-2xl p-6 shadow-lg card-hover transition-all duration-300 block">
-          <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4">
-            <svg class="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-            </svg>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Interface Patient</h3>
-          <p class="text-gray-500 mb-4">
-            Vue mobile du patient. Suivi de position, temps estimé, alertes.
-          </p>
-          <span class="text-green-600 font-medium">Voir →</span>
-        </a>
-
-        <!-- API Docs -->
-        <a href="/health" target="_blank"
-           class="bg-white rounded-2xl p-6 shadow-lg card-hover transition-all duration-300 block">
-          <div class="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
-            <svg class="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-            </svg>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">API Backend</h3>
-          <p class="text-gray-500 mb-4">
-            Vérifier le statut de l'API. Documentation technique.
-          </p>
-          <span class="text-purple-600 font-medium">Status →</span>
-        </a>
-      </div>
-
-      <!-- Demo credentials -->
-      <div class="mt-12 max-w-xl mx-auto bg-white rounded-xl p-6 shadow-md">
-        <h4 class="font-semibold text-gray-800 mb-3">🔑 Identifiants de démo</h4>
-        <div class="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p class="text-gray-500">Admin:</p>
-            <p class="font-mono bg-gray-100 px-2 py-1 rounded">admin@filesante.ca</p>
-            <p class="font-mono bg-gray-100 px-2 py-1 rounded mt-1">admin123</p>
-          </div>
-          <div>
-            <p class="text-gray-500">Infirmière:</p>
-            <p class="font-mono bg-gray-100 px-2 py-1 rounded">nurse@hmr.filesante.ca</p>
-            <p class="font-mono bg-gray-100 px-2 py-1 rounded mt-1">nurse123</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Hospitals -->
-  <section class="py-20 bg-white">
-    <div class="max-w-7xl mx-auto px-4">
-      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Hôpitaux partenaires</h2>
-      
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
-        <div class="text-center p-4">
-          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <span class="text-xl font-bold text-gray-600">HMR</span>
-          </div>
-          <p class="text-sm text-gray-600">Maisonneuve-Rosemont</p>
-        </div>
-        <div class="text-center p-4">
-          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <span class="text-xl font-bold text-gray-600">HND</span>
-          </div>
-          <p class="text-sm text-gray-600">Notre-Dame</p>
-        </div>
-        <div class="text-center p-4">
-          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <span class="text-xl font-bold text-gray-600">HSC</span>
-          </div>
-          <p class="text-sm text-gray-600">Sacré-Cœur</p>
-        </div>
-        <div class="text-center p-4">
-          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-            <span class="text-xl font-bold text-gray-600">HGM</span>
-          </div>
-          <p class="text-sm text-gray-600">Général de Montréal</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA -->
-  <section class="py-20 gradient-bg text-white">
-    <div class="max-w-4xl mx-auto px-4 text-center">
-      <h2 class="text-3xl md:text-4xl font-bold mb-4">Prêt à transformer vos urgences?</h2>
-      <p class="text-xl text-blue-100 mb-8">
-        Contactez-nous pour déployer FileSanté dans votre établissement.
-      </p>
-      <a href="mailto:contact@filesante.ca" 
-         class="inline-block px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-blue-50 transition-all shadow-lg">
-        Nous contacter
       </a>
     </div>
-  </section>
 
-  <!-- Footer -->
-  <footer class="bg-gray-900 text-gray-400 py-12">
-    <div class="max-w-7xl mx-auto px-4">
-      <div class="flex flex-col md:flex-row items-center justify-between">
-        <div class="flex items-center mb-4 md:mb-0">
-          <div class="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-            </svg>
-          </div>
-          <span class="ml-3 text-white font-semibold">FileSanté</span>
-        </div>
-        
-        <div class="flex items-center space-x-6 text-sm">
-          <a href="#" class="hover:text-white transition-colors">Confidentialité</a>
-          <a href="#" class="hover:text-white transition-colors">Conditions</a>
-          <a href="#" class="hover:text-white transition-colors">Contact</a>
-        </div>
+    <!-- Analytics CTA -->
+    <div class="analytics-cta">
+      <div class="analytics-text">
+        <h3>Tableau de bord analytique</h3>
+        <p>KPIs en temps réel, taux d'occupation, temps d'attente moyens et impact mesuré sur la qualité des soins.</p>
       </div>
-      
-      <div class="mt-8 pt-8 border-t border-gray-800 text-center text-sm">
-        <p>© 2024 FileSanté. Conforme à la Loi 25 sur la protection des renseignements personnels.</p>
-      </div>
+      <a href="analytics.html" class="btn btn-white btn-xl">
+        Voir les statistiques
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
     </div>
-  </footer>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
+        <rect width="38" height="38" rx="8" fill="#1965D4"/>
+        <rect x="16" y="8" width="6" height="22" rx="3" fill="white"/>
+        <rect x="8" y="16" width="22" height="6" rx="3" fill="white"/>
+      </svg>
+      <span style="font-size:14px; font-weight:600; color:var(--gray-700);">FileSanté</span>
+      <span class="footer-copy">— File virtuelle pour urgences hospitalières</span>
+    </div>
+    <div class="footer-links">
+      <a href="#">Confidentialité</a>
+      <a href="#">Loi 25</a>
+      <a href="#">Contact</a>
+    </div>
+  </div>
+</footer>
 
 </body>
 </html>
