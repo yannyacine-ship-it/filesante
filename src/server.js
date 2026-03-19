@@ -111,7 +111,7 @@ app.get('/api/hospitals-list', (req, res) => {
 // Route catch-all pour SPA - servir le frontend
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+    res.sendFile(path.join(__dirname, '../frontend', req.path === '/' ? 'index.html' : req.path));
   } else {
     res.status(404).json({ success: false, message: 'Route API non trouvée' });
   }
