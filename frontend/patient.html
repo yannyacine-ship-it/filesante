@@ -10,10 +10,8 @@
     :root {
       --blue-50: #EDF5FF; --blue-100: #C8DFFF;
       --blue-400: #3E8EF7; --blue-600: #1965D4; --blue-800: #0D3B8A;
-      --teal-50: #E0F8F4; --teal-400: #1DB89A; --teal-600: #0F7A68;
-      --amber-50: #FFF8E6; --amber-600: #B45309;
-      --green-50: #EDFAF4; --green-600: #166534;
-      --red-50: #FEF2F2; --red-600: #DC2626;
+      --amber-50: #FFF8E6; --amber-400: #F59E0B; --amber-600: #B45309;
+      --green-50: #EDFAF4; --green-400: #22C55E; --green-600: #166534; --green-800: #14532D;
       --gray-50: #F8F7F5; --gray-100: #EDEDEA;
       --gray-300: #C8C7C2; --gray-400: #9B9A94; --gray-700: #3D3D3A; --gray-900: #1A1A18;
       --white: #FFFFFF;
@@ -26,13 +24,14 @@
 
     /* ── HEADER ── */
     .header {
-      background: linear-gradient(135deg, var(--blue-600) 0%, #1550C0 100%);
       padding: 20px 20px 36px;
       position: relative; overflow: hidden;
     }
+    .header.state-waiting  { background: linear-gradient(135deg, var(--blue-600) 0%, #1550C0 100%); }
+    .header.state-soon     { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); }
+    .header.state-depart   { background: linear-gradient(135deg, #16A34A 0%, #14532D 100%); }
     .header::after {
-      content: '';
-      position: absolute; bottom: -20px; left: 0; right: 0; height: 40px;
+      content: ''; position: absolute; bottom: -20px; left: 0; right: 0; height: 40px;
       background: var(--gray-50); border-radius: 20px 20px 0 0;
     }
     .header-top {
@@ -40,103 +39,68 @@
     }
     .logo-row { display: flex; align-items: center; gap: 8px; }
     .logo-name { font-size: 16px; font-weight: 600; color: white; letter-spacing: -0.3px; }
-    .header-hospital {
-      font-size: 18px; font-weight: 300; color: white; margin-bottom: 2px; letter-spacing: -0.3px;
-    }
+    .header-hospital { font-size: 18px; font-weight: 300; color: white; margin-bottom: 2px; }
     .header-sector { font-size: 13px; color: rgba(255,255,255,0.65); }
 
-    /* ── MAIN ── */
-    main { padding: 28px 20px 40px; max-width: 480px; margin: 0 auto; }
+    main { padding: 28px 20px 80px; max-width: 480px; margin: 0 auto; }
 
     /* ── STATUS CARD ── */
     .status-card {
       background: var(--white); border-radius: 18px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.07);
-      padding: 24px; margin-bottom: 16px;
+      padding: 28px 24px; margin-bottom: 16px; text-align: center;
     }
-    .status-label { font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 14px; }
+
+    /* Big icon */
+    .state-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px; font-size: 32px;
+    }
+    .state-icon.blue   { background: var(--blue-50); }
+    .state-icon.yellow { background: var(--amber-50); }
+    .state-icon.green  { background: var(--green-50); }
 
     /* Status pill */
     .status-pill {
       display: inline-flex; align-items: center; gap: 8px;
-      padding: 8px 14px; border-radius: 100px;
-      font-size: 14px; font-weight: 500; margin-bottom: 16px;
+      padding: 8px 16px; border-radius: 100px;
+      font-size: 13px; font-weight: 600; margin-bottom: 18px;
     }
-    .status-waiting { background: var(--blue-50); color: var(--blue-600); }
-    .status-soon    { background: var(--amber-50); color: var(--amber-600); }
-    .status-return  { background: var(--green-50); color: var(--green-600); }
+    .pill-blue   { background: var(--blue-50);  color: var(--blue-600); }
+    .pill-yellow { background: var(--amber-50); color: var(--amber-600); }
+    .pill-green  { background: var(--green-50); color: var(--green-600); }
     .status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
     .status-dot.pulse { animation: dot-pulse 1.5s ease-in-out infinite; }
     @keyframes dot-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.4)} }
 
-    .status-message {
-      font-size: 22px; font-family: 'DM Serif Display', Georgia, serif;
-      color: var(--gray-900); line-height: 1.25; margin-bottom: 8px;
+    .status-headline {
+      font-size: 24px; font-family: 'DM Serif Display', Georgia, serif;
+      color: var(--gray-900); line-height: 1.2; margin-bottom: 10px;
     }
     .status-sub { font-size: 14px; color: var(--gray-400); line-height: 1.6; }
 
-    /* ── PROGRESS BAR ── */
-    .progress-section { margin: 20px 0 0; }
-    .progress-label { font-size: 12px; color: var(--gray-400); margin-bottom: 8px; display: flex; justify-content: space-between; }
-    .progress-bar { background: var(--gray-100); border-radius: 100px; height: 6px; overflow: hidden; }
-    .progress-fill {
-      height: 100%; border-radius: 100px;
-      background: linear-gradient(90deg, var(--blue-400), var(--blue-600));
-      transition: width 1s ease;
+    /* ── CODE BOX (state depart) ── */
+    .code-box {
+      background: var(--gray-50); border-radius: 14px; padding: 20px;
+      border: 2px dashed var(--green-400); margin: 20px 0;
     }
-
-    /* ── NOTIFICATION BANNER ── */
-    .notif-banner {
-      background: var(--amber-50); border: 1px solid #FDE68A;
-      border-radius: 14px; padding: 16px; margin-bottom: 16px;
-      display: flex; gap: 12px; align-items: flex-start;
-    }
-    .notif-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
-    .notif-title { font-size: 13px; font-weight: 600; color: #92400E; margin-bottom: 3px; }
-    .notif-desc { font-size: 12px; color: #B45309; line-height: 1.5; }
-
-    /* ── RETURN CONFIRMATION CARD ── */
-    .return-card {
-      background: var(--white); border-radius: 18px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.07);
-      padding: 24px; margin-bottom: 16px;
-      border: 2px solid var(--green-50);
-    }
-    .return-title { font-size: 16px; font-weight: 600; color: var(--gray-900); margin-bottom: 6px; }
-    .return-desc { font-size: 13px; color: var(--gray-400); line-height: 1.6; margin-bottom: 20px; }
-
-    /* Return code display */
-    .return-code-box {
-      background: var(--gray-50); border-radius: 12px; padding: 16px;
-      border: 1.5px dashed var(--gray-300); text-align: center; margin-bottom: 16px;
-    }
-    .return-code-label { font-size: 11px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-    .return-code {
-      font-size: 42px; font-weight: 600; letter-spacing: 12px;
+    .code-label { font-size: 11px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .code-value {
+      font-size: 48px; font-weight: 700; letter-spacing: 14px;
       color: var(--gray-900); font-family: 'DM Serif Display', Georgia, serif;
     }
-    .return-code-sub { font-size: 11px; color: var(--gray-400); margin-top: 6px; }
+    .code-sub { font-size: 12px; color: var(--gray-400); margin-top: 6px; }
 
-    /* QR instructions */
-    .qr-instruction {
-      display: flex; align-items: center; gap: 12px;
-      background: var(--blue-50); border-radius: 10px; padding: 12px 14px;
+    /* ── CONFIRM BUTTON ── */
+    .btn-confirm {
+      width: 100%; padding: 16px; border-radius: 14px; border: none;
+      background: var(--green-600); color: white;
+      font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600;
+      cursor: pointer; margin-top: 4px; transition: background 0.15s;
     }
-    .qr-icon-wrap {
-      width: 36px; height: 36px; background: var(--blue-600); border-radius: 8px;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .qr-instruction-text { font-size: 12px; color: var(--blue-800); line-height: 1.5; }
-    .qr-instruction-text strong { color: var(--blue-600); }
-
-    /* ── DIVIDER ── */
-    .or-divider {
-      display: flex; align-items: center; gap: 10px; margin: 12px 0;
-      font-size: 11px; color: var(--gray-400);
-    }
-    .or-divider::before, .or-divider::after {
-      content: ''; flex: 1; height: 1px; background: var(--gray-100);
-    }
+    .btn-confirm:hover { background: var(--green-800); }
+    .btn-confirm:disabled { background: var(--gray-300); cursor: default; }
 
     /* ── INFO CARD ── */
     .info-card {
@@ -146,24 +110,22 @@
     }
     .info-icon {
       width: 36px; height: 36px; border-radius: 9px; background: var(--gray-50);
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;
     }
     .info-title { font-size: 13px; font-weight: 600; color: var(--gray-900); }
-    .info-desc { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+    .info-desc { font-size: 12px; color: var(--gray-400); margin-top: 2px; line-height: 1.5; }
 
-    /* ── PRIVACY NOTE ── */
+    /* ── PRIVACY ── */
     .privacy-note {
       text-align: center; font-size: 11px; color: var(--gray-300);
-      padding: 12px 0; line-height: 1.6;
+      padding: 16px 0; line-height: 1.6;
     }
-    .privacy-note a { color: var(--gray-400); text-decoration: underline; }
 
-    /* ── VIEW TOGGLER (for demo) ── */
+    /* ── DEMO BAR ── */
     .demo-bar {
       position: fixed; bottom: 0; left: 0; right: 0;
       background: var(--gray-900); padding: 12px 20px;
-      display: flex; gap: 8px; justify-content: center;
-      z-index: 999;
+      display: flex; gap: 8px; justify-content: center; z-index: 999;
     }
     .demo-btn {
       font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
@@ -173,15 +135,20 @@
     .demo-btn.active { background: var(--white); color: var(--gray-900); }
     .demo-btn:not(.active) { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
 
-    /* ── STATES ── */
     .view { display: none; }
     .view.active { display: block; }
+
+    /* Confirmed success */
+    .confirmed-box {
+      background: var(--green-50); border-radius: 14px; padding: 20px; margin-top: 16px;
+      border: 1.5px solid #BBF7D0; text-align: center;
+    }
+    .confirmed-box p { font-size: 13px; color: var(--green-600); font-weight: 500; }
   </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="header">
+<div class="header state-waiting" id="headerEl">
   <div class="header-top">
     <div class="logo-row">
       <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
@@ -199,147 +166,109 @@
 
 <main>
 
-  <!-- ═══ VIEW 1 : EN ATTENTE ═══ -->
+  <!-- ═══ ÉTAT 1 : EN ATTENTE ═══ -->
   <div class="view active" id="view-waiting">
-
     <div class="status-card">
-      <div class="status-label">Votre statut</div>
-      <div class="status-pill status-waiting">
+      <div class="state-icon blue">🏠</div>
+      <div class="status-pill pill-blue">
         <span class="status-dot pulse"></span>
-        En attente à domicile
+        En attente
       </div>
-      <div class="status-message">Vous pouvez rentrer chez vous</div>
-      <div class="status-sub">Nous vous enverrons un SMS quand votre tour approchera. Gardez votre téléphone près de vous.</div>
-
-      <div class="progress-section">
-        <div class="progress-label">
-          <span>Prise en charge</span>
-          <span style="color:var(--blue-600); font-weight:500;">En cours</span>
-        </div>
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: 28%;"></div>
-        </div>
-      </div>
+      <div class="status-headline">En attente<br>Restez disponible</div>
+      <div class="status-sub">Vous pouvez rester chez vous. Gardez votre téléphone près de vous — nous vous contacterons.</div>
     </div>
 
-    <div class="notif-banner">
-      <div class="notif-icon">📱</div>
+    <div class="info-card">
+      <div class="info-icon">📱</div>
       <div>
-        <div class="notif-title">SMS de rappel automatique</div>
-        <div class="notif-desc">Vous recevrez un message au <strong>+1 (514) 555-0187</strong> environ 45 minutes avant votre tour. Vous aurez ensuite 30 minutes pour revenir.</div>
+        <div class="info-title">SMS automatique</div>
+        <div class="info-desc">Vous recevrez un premier message quand votre tour approchera, puis un second pour partir.</div>
       </div>
     </div>
 
     <div class="info-card">
-      <div class="info-icon">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--gray-400)" stroke-width="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-      </div>
+      <div class="info-icon">🔒</div>
       <div>
         <div class="info-title">Votre place est sécurisée</div>
-        <div class="info-desc">Les urgences P1–P3 peuvent ajuster les temps d'attente. Votre place, elle, est garantie.</div>
+        <div class="info-desc">Votre position dans la file est garantie. Seules les urgences critiques P1–P3 peuvent modifier l'ordre.</div>
       </div>
     </div>
 
     <div class="info-card">
-      <div class="info-icon">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--gray-400)" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-      </div>
+      <div class="info-icon">⚠️</div>
       <div>
         <div class="info-title">Symptômes qui s'aggravent ?</div>
-        <div class="info-desc">Revenez immédiatement à l'urgence et signalez votre changement d'état à l'accueil.</div>
+        <div class="info-desc">Revenez immédiatement à l'urgence et signalez votre état à l'accueil.</div>
       </div>
     </div>
 
     <div class="privacy-note">
-      Données protégées conformément à la <a href="#">Loi 25 du Québec</a>.<br>
+      Données protégées conformément à la Loi 25 du Québec.<br>
       Suppression automatique 24h après votre visite.
     </div>
   </div>
 
-  <!-- ═══ VIEW 2 : VOTRE TOUR APPROCHE ═══ -->
+  <!-- ═══ ÉTAT 2 : VOTRE TOUR APPROCHE ═══ -->
   <div class="view" id="view-soon">
-
     <div class="status-card">
-      <div class="status-label">Votre statut</div>
-      <div class="status-pill status-soon">
+      <div class="state-icon yellow">⏰</div>
+      <div class="status-pill pill-yellow">
         <span class="status-dot pulse"></span>
         Votre tour approche
       </div>
-      <div class="status-message">Revenez à l'hôpital maintenant</div>
-      <div class="status-sub">Présentez-vous à l'accueil des urgences et montrez cet écran à l'infirmière pour confirmer votre arrivée.</div>
-
-      <div class="progress-section">
-        <div class="progress-label">
-          <span>Prise en charge</span>
-          <span style="color:var(--amber-600); font-weight:500;">Imminent</span>
-        </div>
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: 82%; background: linear-gradient(90deg, #F59E0B, #D97706);"></div>
-        </div>
-      </div>
+      <div class="status-headline">Votre tour approche<br>Préparez-vous à partir</div>
+      <div class="status-sub">Préparez votre manteau, vos documents et votre moyen de transport. Un second SMS vous dira exactement quand partir.</div>
     </div>
 
-    <!-- RETURN CONFIRMATION -->
-    <div class="return-card">
-      <div class="return-title">Confirmez votre retour à l'hôpital</div>
-      <div class="return-desc">Deux façons de confirmer votre présence auprès de l'infirmière au triage :</div>
-
-      <!-- Option 1 : QR Code -->
-      <div class="qr-instruction">
-        <div class="qr-icon-wrap">
-          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
-            <rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/>
-            <rect x="3" y="16" width="5" height="5"/><path d="M16 16h2v2h-2zM18 14h2v2h-2zM14 16v2h2v-2zM14 14h2v-2h-2zM16 18h2v2h-2z"/>
-          </svg>
-        </div>
-        <div class="qr-instruction-text">
-          <strong>Option principale :</strong> L'infirmière scanne votre QR code avec son dashboard en 2 secondes.
-        </div>
-      </div>
-
-      <div class="or-divider">ou si votre téléphone est déchargé</div>
-
-      <!-- Option 2 : Code 4 chiffres -->
-      <div class="return-code-box">
-        <div class="return-code-label">Votre code de retour</div>
-        <div class="return-code" id="returnCode">4821</div>
-        <div class="return-code-sub">Dictez ce code à l'infirmière au triage</div>
-      </div>
-    </div>
-
-    <div class="info-card" style="border-color: #FDE68A; background: var(--amber-50);">
-      <div class="info-icon" style="background:white;">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#D97706" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      </div>
+    <div class="info-card" style="border-color:#FDE68A;background:var(--amber-50);">
+      <div class="info-icon" style="background:white;">⏱️</div>
       <div>
-        <div class="info-title" style="color:#92400E;">Vous avez 30 minutes</div>
-        <div class="info-desc" style="color:#B45309;">Si vous ne revenez pas dans ce délai, votre place sera réassignée au prochain patient.</div>
+        <div class="info-title" style="color:#92400E;">Prochain message bientôt</div>
+        <div class="info-desc" style="color:#B45309;">Vous recevrez un second SMS avec l'instruction de partir et votre code de présentation au triage.</div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-icon">📋</div>
+      <div>
+        <div class="info-title">Préparez vos documents</div>
+        <div class="info-desc">Carte d'assurance maladie (RAMQ), pièce d'identité, liste de médicaments si applicable.</div>
       </div>
     </div>
   </div>
 
-  <!-- ═══ VIEW 3 : CONFIRMÉ ═══ -->
-  <div class="view" id="view-confirmed">
-    <div class="status-card" style="text-align:center; padding:36px 24px;">
-      <div style="width:64px;height:64px;background:var(--green-50);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-        <svg width="30" height="30" fill="none" viewBox="0 0 24 24" stroke="var(--green-600)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+  <!-- ═══ ÉTAT 3 : PARTEZ MAINTENANT ═══ -->
+  <div class="view" id="view-depart">
+    <div class="status-card">
+      <div class="state-icon green">🚗</div>
+      <div class="status-pill pill-green">
+        <span class="status-dot pulse"></span>
+        Partez maintenant
       </div>
-      <div class="status-pill status-return" style="margin: 0 auto 16px;">
-        <span class="status-dot"></span>
-        Présence confirmée
+      <div class="status-headline">Partez maintenant</div>
+      <div class="status-sub">Dirigez-vous vers l'urgence et présentez ce code à l'infirmière au triage.</div>
+
+      <div class="code-box">
+        <div class="code-label">Votre code de triage</div>
+        <div class="code-value" id="departCode">—</div>
+        <div class="code-sub">Dictez ce code à l'infirmière ou montrez cet écran</div>
       </div>
-      <div class="status-message" style="margin-bottom:8px;">Bienvenue de retour !</div>
-      <div class="status-sub">Votre arrivée a été enregistrée. Veuillez patienter en salle d'attente — une infirmière vous appellera sous peu.</div>
+
+      <button class="btn-confirm" id="btnConfirm" onclick="confirmArrival()">
+        ✅ Je suis arrivé(e) — Confirmer ma présence
+      </button>
     </div>
 
-    <div class="info-card">
-      <div class="info-icon" style="background: var(--green-50);">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--green-600)" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-      </div>
+    <div class="info-card" style="border-color:#BBF7D0;background:var(--green-50);">
+      <div class="info-icon" style="background:white;">⏳</div>
       <div>
-        <div class="info-title">Restez dans la salle d'attente</div>
-        <div class="info-desc">L'infirmière vous appellera par votre nom. Ne quittez pas les urgences.</div>
+        <div class="info-title" style="color:#14532D;">Vous avez 30 minutes</div>
+        <div class="info-desc" style="color:#166534;">Si vous ne pouvez pas vous présenter dans ce délai, votre place sera réassignée au prochain patient.</div>
       </div>
+    </div>
+
+    <div id="confirmedBox" class="confirmed-box" style="display:none;">
+      <p>✅ Présence confirmée — Bienvenue ! Veuillez patienter en salle d'attente.</p>
     </div>
   </div>
 
@@ -348,32 +277,98 @@
 <!-- DEMO TOGGLE BAR -->
 <div class="demo-bar">
   <span style="font-size:11px;color:rgba(255,255,255,0.4);margin-right:4px;">Démo :</span>
-  <button class="demo-btn active" onclick="showView('waiting')">En attente</button>
-  <button class="demo-btn" onclick="showView('soon')">Tour approche</button>
-  <button class="demo-btn" onclick="showView('confirmed')">Confirmé</button>
+  <button class="demo-btn active" onclick="showState('waiting', this)">En attente</button>
+  <button class="demo-btn" onclick="showState('soon', this)">Tour approche</button>
+  <button class="demo-btn" onclick="showState('depart', this)">Partez</button>
 </div>
 
 <script>
-  function showView(state) {
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('view-' + state).classList.add('active');
-    event.target.classList.add('active');
-  }
-
-  // Generate a random 4-digit return code
-  document.getElementById('returnCode').textContent = Math.floor(1000 + Math.random() * 9000);
-
-  // Read hospital from URL param
-  const params = new URLSearchParams(location.search);
-  const hospitals = {
+  // ── Hospitals ──
+  const HOSPITALS = {
     HMR: 'Hôpital Maisonneuve-Rosemont',
     HND: 'Hôpital Notre-Dame',
     HSC: 'Hôpital du Sacré-Cœur',
     HGM: 'Hôpital Général de Montréal'
   };
+
+  const params = new URLSearchParams(location.search);
+  const token = params.get('token');
   const h = params.get('h') || 'HMR';
-  if (hospitals[h]) document.getElementById('hospitalName').textContent = hospitals[h];
+  if (HOSPITALS[h]) document.getElementById('hospitalName').textContent = HOSPITALS[h];
+
+  // ── State management ──
+  const HEADER_CLASSES = { waiting: 'state-waiting', soon: 'state-soon', depart: 'state-depart' };
+
+  function showState(state, btn) {
+    // Views
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + state).classList.add('active');
+
+    // Header color
+    const hdr = document.getElementById('headerEl');
+    hdr.className = 'header ' + (HEADER_CLASSES[state] || 'state-waiting');
+
+    // Demo bar
+    if (btn) {
+      document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    // Set code for depart state
+    if (state === 'depart') {
+      const code = token || params.get('code') || '????';
+      document.getElementById('departCode').textContent = code.toUpperCase();
+    }
+  }
+
+  // ── Confirm arrival ──
+  async function confirmArrival() {
+    const btn = document.getElementById('btnConfirm');
+    btn.disabled = true;
+    btn.textContent = 'Confirmation en cours...';
+
+    try {
+      // Find patient id from token if available
+      // In demo mode, just show success UI
+      if (token) {
+        const idParam = params.get('pid');
+        if (idParam) {
+          await fetch('/api/patients/' + idParam + '/confirm', { method: 'POST' });
+        }
+      }
+    } catch (_) {}
+
+    document.getElementById('confirmedBox').style.display = 'block';
+    btn.style.display = 'none';
+  }
+
+  // ── Live polling (when token is present) ──
+  async function pollStatus() {
+    if (!token) return;
+    try {
+      const resp = await fetch('/api/patients/' + token);
+      if (!resp.ok) return;
+      const { data } = await resp.json();
+      if (!data) return;
+
+      if (data.status === 'waiting') {
+        // Check sms_60_sent via metadata if available
+        showState('waiting');
+      } else if (data.status === 'notified') {
+        showState('depart');
+        document.getElementById('departCode').textContent = (data.token || '').toUpperCase();
+      } else if (data.status === 'returned') {
+        document.getElementById('confirmedBox').style.display = 'block';
+        document.getElementById('btnConfirm').style.display = 'none';
+      }
+    } catch (_) {}
+  }
+
+  // Poll every 60s when token present
+  if (token) {
+    pollStatus();
+    setInterval(pollStatus, 60000);
+  }
 </script>
 </body>
 </html>
