@@ -80,8 +80,12 @@ router.post('/reset', async (req, res) => {
       data: inserted
     });
   } catch (error) {
-    logger.error('Erreur demo reset', error);
-    res.status(500).json({ success: false, error: error.message });
+    const msg = error.message || error.code || String(error);
+    logger.error('Erreur demo reset', { msg, code: error.code });
+    if (!error.message && error.code === 'ETIMEDOUT') {
+      return res.status(503).json({ success: false, error: 'Base de données non accessible (ETIMEDOUT). Définissez DATABASE_URL.' });
+    }
+    res.status(500).json({ success: false, error: msg });
   }
 });
 

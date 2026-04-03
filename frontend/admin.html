@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FileSanté — Administration</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -233,7 +233,10 @@
     let hourly = DEMO_HOURLY;
 
     try {
-      const resp = await fetch('/api/hospitals/all/admin-stats');
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 4000); // give up after 4s
+      const resp = await fetch('/api/hospitals/all/admin-stats', { signal: controller.signal });
+      clearTimeout(timeout);
       if (resp.ok) {
         const { data } = await resp.json();
         if (data?.hospitals?.length) {
@@ -241,7 +244,7 @@
           hourly = (data.hourlyPatients || []).map(r => ({ hour: new Date(r.hour), count: r.count }));
         }
       }
-    } catch (_) {}
+    } catch (_) { /* fall through to demo data */ }
 
     renderGlobal(hospitals);
     renderHospitals(hospitals);
@@ -306,6 +309,12 @@
   }
 
   function renderChart(hourly) {
+    if (typeof Chart === 'undefined') {
+      document.querySelector('.chart-canvas-wrap').innerHTML =
+        '<p style="text-align:center;color:#9B9A94;padding:60px 0;font-size:13px;">Graphique indisponible (CDN hors ligne)</p>';
+      return;
+    }
+
     const labels = hourly.map(r => {
       const d = r.hour instanceof Date ? r.hour : new Date(r.hour);
       return d.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
