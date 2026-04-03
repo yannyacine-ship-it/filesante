@@ -20,6 +20,8 @@ const logger = require('./utils/logger');
 const authRoutes = require('./routes/auth');
 const patientsRoutes = require('./routes/patients');
 const hospitalsRoutes = require('./routes/hospitals');
+const adminOpsRoutes = require('./routes/admin-ops');
+const demoRoutes = require('./routes/demo');
 
 // Services
 const WebSocketService = require('./services/WebSocketService');
@@ -96,6 +98,8 @@ app.get('/health', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientsRoutes);
 app.use('/api/hospitals', hospitalsRoutes);
+app.use('/api/admin', adminOpsRoutes);
+app.use('/api/demo', demoRoutes);
 
 // Liste des hôpitaux (endpoint public simplifié)
 app.get('/api/hospitals-list', (req, res) => {
@@ -104,6 +108,99 @@ app.get('/api/hospitals-list', (req, res) => {
     ...data
   }));
   res.json({ success: true, data: hospitals });
+});
+
+// ── PDF SHIFT REPORT (Feature 8) ──
+app.get('/api/hospitals/:code/report', async (req, res) => {
+  const { code } = req.params;
+  try {
+    const PDFDocument = require('pdfkit');
+    const db = require('../config/database');
+
+    // Fetch stats
+    let stats = { returned: 0, noshow: 0, non_confirme: 0, avg_wait: 0, peak_hour: null, total: 0 };
+    let hourly = [];
+    try {
+      const { rows } = await db.query(`
+        SELECT
+          COUNT(*) FILTER (WHERE status = 'returned') as returned,
+          COUNT(*) FILTER (WHERE status IN ('noshow','non_confirme')) as noshow,
+          AVG(EXTRACT(EPOCH FROM (returned_at - activated_at))/60) FILTER (WHERE status = 'returned' AND activated_at IS NOT NULL) as avg_wait,
+          COUNT(*) as total
+        FROM patients p
+        JOIN hospitals h ON p.hospital_id = h.id
+        WHERE h.code = $1 AND p.created_at >= CURRENT_DATE
+      `, [code]);
+      if (rows[0]) {
+        stats.returned = parseInt(rows[0].returned) || 0;
+        stats.noshow = parseInt(rows[0].noshow) || 0;
+        stats.total = parseInt(rows[0].total) || 0;
+        stats.avg_wait = Math.round(parseFloat(rows[0].avg_wait) || 0);
+      }
+
+      const { rows: hr } = await db.query(`
+        SELECT EXTRACT(HOUR FROM created_at) as hour, COUNT(*) as count
+        FROM patients p JOIN hospitals h ON p.hospital_id = h.id
+        WHERE h.code = $1 AND p.created_at >= CURRENT_DATE
+        GROUP BY EXTRACT(HOUR FROM created_at) ORDER BY count DESC LIMIT 1
+      `, [code]);
+      if (hr[0]) stats.peak_hour = hr[0].hour;
+    } catch (_) { /* DB might not be connected */ }
+
+    const hospitalName = config.hospitals[code]?.name || code;
+    const now = new Date();
+    const shiftDate = now.toLocaleDateString('fr-CA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const shiftTime = now.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="rapport-quart-${code}-${now.toISOString().split('T')[0]}.pdf"`);
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(22).font('Helvetica-Bold').text('FileSanté', 50, 50);
+    doc.fontSize(14).font('Helvetica').fillColor('#555').text('Rapport de quart — Urgences P4/P5', 50, 78);
+    doc.moveTo(50, 100).lineTo(545, 100).strokeColor('#1965D4').lineWidth(2).stroke();
+
+    doc.fontSize(11).fillColor('#333').font('Helvetica')
+      .text(`Hôpital: ${hospitalName}`, 50, 115)
+      .text(`Date: ${shiftDate}`, 50, 132)
+      .text(`Généré à: ${shiftTime}`, 50, 149);
+
+    // Stats
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1965D4').text('Statistiques du quart', 50, 185);
+    doc.moveTo(50, 203).lineTo(545, 203).strokeColor('#ddd').lineWidth(1).stroke();
+
+    const statRows = [
+      ['Patients traités (revenus)', stats.returned],
+      ['No-show / Non confirmés', stats.noshow],
+      ['Total enregistrés', stats.total],
+      ['Temps moyen d\'attente', stats.avg_wait ? `${stats.avg_wait} min` : 'N/A'],
+      ['Heure de pointe', stats.peak_hour !== null ? `${stats.peak_hour}h00` : 'N/A'],
+      ['Taux no-show', stats.total > 0 ? `${Math.round(stats.noshow / stats.total * 100)}%` : 'N/A'],
+      ['Taux de retour', stats.total > 0 ? `${Math.round(stats.returned / stats.total * 100)}%` : 'N/A']
+    ];
+
+    let y = 215;
+    statRows.forEach(([label, value], i) => {
+      const bg = i % 2 === 0 ? '#F8F8F8' : '#FFFFFF';
+      doc.rect(50, y, 495, 22).fill(bg);
+      doc.fontSize(11).font('Helvetica').fillColor('#333').text(label, 60, y + 6);
+      doc.font('Helvetica-Bold').text(String(value), 400, y + 6, { width: 130, align: 'right' });
+      y += 22;
+    });
+
+    // Footer
+    doc.fontSize(9).font('Helvetica').fillColor('#aaa')
+      .text('Rapport généré automatiquement par FileSanté — Données protégées (Loi 25 Québec)', 50, 740, { align: 'center' });
+
+    doc.end();
+  } catch (error) {
+    logger.error('Erreur génération rapport PDF', error);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, error: 'Erreur génération PDF' });
+    }
+  }
 });
 
 // ==================== FRONTEND ROUTES ====================

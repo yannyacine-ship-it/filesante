@@ -4,9 +4,10 @@
 
 const express = require('express');
 const router = express.Router();
-const { param, query, validationResult } = require('express-validator');
+const { param, body, query, validationResult } = require('express-validator');
 
 const Patient = require('../models/Patient');
+const SmsService = require('../services/SmsService');
 const db = require('../../config/database');
 const config = require('../../config');
 const logger = require('../utils/logger');
@@ -308,5 +309,146 @@ router.get('/:code/history',
     }
   }
 );
+
+/**
+ * POST /api/hospitals/:code/surge
+ * Bouton urgence entrante — ajoute N minutes à tous les patients en attente (Feature 5)
+ */
+router.post('/:code/surge',
+  [
+    param('code').isIn(Object.keys(config.hospitals)),
+    body('minutes').isInt({ min: 1, max: 120 })
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const { code } = req.params;
+      const { minutes } = req.body;
+
+      // Récupérer tous les patients en attente
+      const { rows: affected } = await db.query(`
+        UPDATE patients SET
+          estimated_wait_minutes = estimated_wait_minutes + $1,
+          surge_added_minutes = COALESCE(surge_added_minutes, 0) + $1
+        FROM hospitals h
+        WHERE patients.hospital_id = h.id
+          AND h.code = $2
+          AND patients.status IN ('waiting', 'notified')
+        RETURNING patients.*, h.name as hospital_name
+      `, [minutes, code]);
+
+      // Envoyer SMS à tous les patients SMS avec un téléphone
+      let smsSent = 0;
+      for (const patient of affected) {
+        if (patient.phone && patient.notification_mode !== 'call') {
+          try {
+            await SmsService.sendSurgeAdjustment(patient);
+            smsSent++;
+          } catch (err) {
+            logger.error('Erreur SMS surge', { patientId: patient.id });
+          }
+        }
+      }
+
+      logger.info('Surge appliqué', { hospitalCode: code, minutes, affected: affected.length, smsSent });
+
+      res.json({
+        success: true,
+        data: { minutes, affectedCount: affected.length, smsSent }
+      });
+    } catch (error) {
+      logger.error('Erreur surge', error);
+      res.status(500).json({ success: false, error: 'Erreur lors de l\'application du surge' });
+    }
+  }
+);
+
+/**
+ * GET /api/hospitals/:code/call-alerts
+ * Patients en mode appel qui ont besoin d'être appelés (Feature 6)
+ */
+router.get('/:code/call-alerts',
+  [param('code').isIn(Object.keys(config.hospitals))],
+  validate,
+  async (req, res) => {
+    try {
+      const patients = await Patient.getCallAlerts(req.params.code);
+      res.json({
+        success: true,
+        data: patients.map(p => ({
+          id: p.id,
+          token: p.token,
+          phone: p.phone ? `***-***-${p.phone.slice(-4)}` : null,
+          phoneRaw: p.phone,
+          priority: p.priority,
+          status: p.status,
+          remainingMinutes: Math.round((p.remaining_seconds || 0) / 60),
+          callNotified60: p.call_notified_60,
+          callNotified30: p.call_notified_30
+        }))
+      });
+    } catch (error) {
+      logger.error('Erreur call-alerts', error);
+      res.status(500).json({ success: false, error: 'Erreur lors de la récupération' });
+    }
+  }
+);
+
+/**
+ * GET /api/hospitals/all/admin-stats
+ * Vue admin — tous hôpitaux (Feature 7)
+ */
+router.get('/all/admin-stats', async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        h.code, h.name, h.is_active,
+        COUNT(p.id) FILTER (WHERE p.status IN ('waiting','notified')) as queue_count,
+        COUNT(p.id) FILTER (WHERE p.status = 'notified') as notified_count,
+        COUNT(p.id) FILTER (WHERE p.status = 'non_confirme' AND p.created_at >= CURRENT_DATE) as non_confirme_today,
+        COUNT(p.id) FILTER (WHERE p.status = 'noshow' AND p.created_at >= CURRENT_DATE) as noshow_today,
+        COUNT(p.id) FILTER (WHERE p.status = 'returned' AND p.created_at >= CURRENT_DATE) as returned_today,
+        AVG(p.estimated_wait_minutes) FILTER (WHERE p.status IN ('waiting','notified')) as avg_wait
+      FROM hospitals h
+      LEFT JOIN patients p ON p.hospital_id = h.id
+      GROUP BY h.id, h.code, h.name, h.is_active
+      ORDER BY h.name
+    `);
+
+    // Patients par heure (last 12h)
+    const { rows: hourly } = await db.query(`
+      SELECT
+        DATE_TRUNC('hour', created_at) as hour,
+        COUNT(*) as count
+      FROM patients
+      WHERE created_at >= NOW() - INTERVAL '12 hours'
+      GROUP BY DATE_TRUNC('hour', created_at)
+      ORDER BY hour
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        hospitals: rows.map(h => ({
+          code: h.code,
+          name: h.name,
+          isActive: h.is_active,
+          queueCount: parseInt(h.queue_count) || 0,
+          notifiedCount: parseInt(h.notified_count) || 0,
+          lwbs: parseInt(h.noshow_today) + parseInt(h.non_confirme_today || 0),
+          returnedToday: parseInt(h.returned_today) || 0,
+          avgWaitMinutes: Math.round(parseFloat(h.avg_wait) || 0)
+        })),
+        hourlyPatients: hourly.map(r => ({
+          hour: r.hour,
+          count: parseInt(r.count)
+        }))
+      }
+    });
+  } catch (error) {
+    logger.error('Erreur admin stats', error);
+    res.status(500).json({ success: false, error: 'Erreur lors de la récupération' });
+  }
+});
 
 module.exports = router;
