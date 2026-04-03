@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FileSanté — Administration</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue-50: #EDF5FF; --blue-400: #3E8EF7; --blue-600: #1965D4; --blue-800: #0D3B8A;
+      --green-50: #EDFAF4; --green-400: #22C55E; --green-600: #166534;
+      --amber-50: #FFF8E6; --amber-400: #F59E0B; --amber-600: #B45309;
+      --red-50: #FEF2F2; --red-400: #F87171; --red-600: #DC2626;
+      --teal-50: #E0F8F4; --teal-600: #0F7A68;
+      --gray-50: #F8F7F5; --gray-100: #EDEDEA; --gray-200: #DDDCDA;
+      --gray-400: #9B9A94; --gray-600: #5C5C58; --gray-700: #3D3D3A; --gray-900: #1A1A18;
+      --white: #FFFFFF;
+    }
+    body {
+      font-family: 'DM Sans', sans-serif; background: var(--gray-50);
+      color: var(--gray-700); min-height: 100vh; -webkit-font-smoothing: antialiased;
+    }
+    .layout { display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 220px; background: var(--gray-900); flex-shrink: 0;
+      display: flex; flex-direction: column; padding: 24px 0;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.07); margin-bottom: 16px;
+    }
+    .sidebar-logo-text { font-size: 16px; font-weight: 600; color: white; }
+    .sidebar-logo-text span { color: var(--blue-400); }
+    .sidebar-section { padding: 0 12px; margin-bottom: 4px; }
+    .sidebar-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;
+      color: rgba(255,255,255,0.25); padding: 0 8px; margin-bottom: 6px; margin-top: 12px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+      border-radius: 9px; cursor: pointer; font-size: 13px; font-weight: 500;
+      color: rgba(255,255,255,0.5); transition: all 0.15s; text-decoration: none; margin-bottom: 2px;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
+    .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+
+    /* MAIN */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar {
+      background: var(--white); border-bottom: 1px solid var(--gray-100);
+      padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .topbar h1 { font-size: 17px; font-weight: 600; color: var(--gray-900); }
+    .topbar p { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+    .content { padding: 24px 28px; flex: 1; overflow-y: auto; }
+
+    /* GLOBAL STATS STRIP */
+    .global-strip {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--white); border-radius: 14px; border: 1px solid var(--gray-100); padding: 18px;
+    }
+    .stat-value { font-size: 32px; font-weight: 700; color: var(--gray-900); letter-spacing: -1.5px; }
+    .stat-label { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+    .stat-badge {
+      display: inline-block; font-size: 10px; font-weight: 600;
+      padding: 2px 7px; border-radius: 100px; margin-top: 6px;
+    }
+    .badge-blue  { background: var(--blue-50);  color: var(--blue-600); }
+    .badge-green { background: var(--green-50); color: var(--green-600); }
+    .badge-amber { background: var(--amber-50); color: var(--amber-600); }
+    .badge-red   { background: var(--red-50);   color: var(--red-600); }
+
+    /* HOSPITAL CARDS GRID */
+    .hospitals-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;
+    }
+    .hospital-card {
+      background: var(--white); border-radius: 16px; border: 1px solid var(--gray-100);
+      padding: 20px; position: relative; overflow: hidden;
+    }
+    .hospital-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .hospital-card.active-card::before { background: var(--blue-400); }
+    .hospital-card.warn-card::before   { background: var(--amber-400); }
+    .hospital-card.ok-card::before     { background: var(--green-400); }
+    .hospital-card.alert-card::before  { background: var(--red-400); }
+    .h-name { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 16px; }
+    .h-code { font-size: 11px; color: var(--gray-400); font-weight: 400; margin-left: 6px; }
+    .h-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .h-stat { text-align: center; }
+    .h-stat-value { font-size: 22px; font-weight: 700; color: var(--gray-900); }
+    .h-stat-label { font-size: 10px; color: var(--gray-400); margin-top: 2px; }
+    .lwbs-count { color: var(--red-600) !important; }
+    .h-wait-bar {
+      margin-top: 14px; background: var(--gray-100); border-radius: 100px; height: 5px;
+    }
+    .h-wait-fill { height: 100%; border-radius: 100px; }
+
+    /* CHART SECTION */
+    .chart-section {
+      background: var(--white); border-radius: 16px; border: 1px solid var(--gray-100);
+      padding: 20px; margin-bottom: 24px;
+    }
+    .chart-title { font-size: 15px; font-weight: 600; color: var(--gray-900); margin-bottom: 16px; }
+    .chart-canvas-wrap { height: 240px; }
+
+    /* REFRESH */
+    .refresh-btn {
+      padding: 8px 16px; border-radius: 9px; border: 1px solid var(--gray-200);
+      background: var(--white); font-family: 'DM Sans', sans-serif; font-size: 13px;
+      color: var(--gray-700); cursor: pointer; transition: background 0.15s;
+    }
+    .refresh-btn:hover { background: var(--gray-50); }
+    .last-updated { font-size: 11px; color: var(--gray-400); margin-left: 10px; }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .global-strip { grid-template-columns: repeat(2,1fr); }
+      .hospitals-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
+        <rect width="38" height="38" rx="8" fill="#1965D4"/>
+        <rect x="16" y="8" width="6" height="22" rx="3" fill="white"/>
+        <rect x="8" y="16" width="22" height="6" rx="3" fill="white"/>
+      </svg>
+      <span class="sidebar-logo-text">File<span>Santé</span></span>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Navigation</div>
+      <a class="nav-item" href="/dashboard.html">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard Infirmière
+      </a>
+      <a class="nav-item active">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+        Vue Admin
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1>Vue Administration — Tous les hôpitaux</h1>
+        <p>Tableau de bord temps réel · <span id="lastUpdated">—</span></p>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <button class="refresh-btn" onclick="loadStats()">↻ Actualiser</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- GLOBAL STRIP -->
+      <div class="global-strip">
+        <div class="stat-card">
+          <div class="stat-value" id="gTotal">—</div>
+          <div class="stat-label">Patients en file (tous hôpitaux)</div>
+          <div class="stat-badge badge-blue">Temps réel</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="gReturned">—</div>
+          <div class="stat-label">Retournés aujourd'hui</div>
+          <div class="stat-badge badge-green">Ce quart</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="gLwbs">—</div>
+          <div class="stat-label">LWBS (No-show + Non confirmés)</div>
+          <div class="stat-badge badge-red">Aujourd'hui</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="gAvgWait">—</div>
+          <div class="stat-label">Temps d'attente moyen global</div>
+          <div class="stat-badge badge-amber">min</div>
+        </div>
+      </div>
+
+      <!-- HOSPITAL CARDS -->
+      <div class="hospitals-grid" id="hospitalsGrid">
+        <!-- injected by JS -->
+      </div>
+
+      <!-- PATIENTS / HEURE CHART -->
+      <div class="chart-section">
+        <div class="chart-title">Patients enregistrés par heure (12 dernières heures)</div>
+        <div class="chart-canvas-wrap">
+          <canvas id="hourlyChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let hourlyChart = null;
+
+  // Demo / fallback data when backend is unavailable
+  const DEMO_HOSPITALS = [
+    { code: 'HMR', name: 'Hôpital Maisonneuve-Rosemont', isActive: true, queueCount: 12, notifiedCount: 3, lwbs: 2, returnedToday: 8, avgWaitMinutes: 127 },
+    { code: 'HND', name: 'Hôpital Notre-Dame',           isActive: true, queueCount: 7,  notifiedCount: 1, lwbs: 1, returnedToday: 5, avgWaitMinutes: 95 },
+    { code: 'HSC', name: 'Hôpital du Sacré-Cœur',        isActive: true, queueCount: 15, notifiedCount: 4, lwbs: 3, returnedToday: 11, avgWaitMinutes: 145 },
+    { code: 'HGM', name: 'Hôpital Général de Montréal',  isActive: true, queueCount: 9,  notifiedCount: 2, lwbs: 0, returnedToday: 6, avgWaitMinutes: 110 }
+  ];
+
+  const DEMO_HOURLY = Array.from({ length: 12 }, (_, i) => ({
+    hour: new Date(Date.now() - (11 - i) * 3600000),
+    count: Math.floor(Math.random() * 8) + 1
+  }));
+
+  async function loadStats() {
+    document.getElementById('lastUpdated').textContent = 'Chargement...';
+
+    let hospitals = DEMO_HOSPITALS;
+    let hourly = DEMO_HOURLY;
+
+    try {
+      const resp = await fetch('/api/hospitals/all/admin-stats');
+      if (resp.ok) {
+        const { data } = await resp.json();
+        if (data?.hospitals?.length) {
+          hospitals = data.hospitals;
+          hourly = (data.hourlyPatients || []).map(r => ({ hour: new Date(r.hour), count: r.count }));
+        }
+      }
+    } catch (_) {}
+
+    renderGlobal(hospitals);
+    renderHospitals(hospitals);
+    renderChart(hourly);
+
+    document.getElementById('lastUpdated').textContent =
+      'Mis à jour à ' + new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function renderGlobal(hospitals) {
+    const total = hospitals.reduce((s, h) => s + h.queueCount, 0);
+    const returned = hospitals.reduce((s, h) => s + h.returnedToday, 0);
+    const lwbs = hospitals.reduce((s, h) => s + h.lwbs, 0);
+    const avgWait = hospitals.length
+      ? Math.round(hospitals.reduce((s, h) => s + h.avgWaitMinutes, 0) / hospitals.length)
+      : 0;
+
+    document.getElementById('gTotal').textContent = total;
+    document.getElementById('gReturned').textContent = returned;
+    document.getElementById('gLwbs').textContent = lwbs;
+    document.getElementById('gAvgWait').textContent = avgWait + ' min';
+  }
+
+  function renderHospitals(hospitals) {
+    const grid = document.getElementById('hospitalsGrid');
+    grid.innerHTML = hospitals.map(h => {
+      const waitPct = Math.min(100, Math.round(h.avgWaitMinutes / 240 * 100));
+      const cardClass = h.lwbs >= 3 ? 'alert-card' : h.queueCount >= 12 ? 'warn-card' : 'ok-card';
+      const barColor = h.lwbs >= 3 ? '#F87171' : h.queueCount >= 12 ? '#F59E0B' : '#22C55E';
+
+      return `
+        <div class="hospital-card ${cardClass}">
+          <div class="h-name">${h.name} <span class="h-code">${h.code}</span></div>
+          <div class="h-stats">
+            <div class="h-stat">
+              <div class="h-stat-value">${h.queueCount}</div>
+              <div class="h-stat-label">En file</div>
+            </div>
+            <div class="h-stat">
+              <div class="h-stat-value">${h.returnedToday}</div>
+              <div class="h-stat-label">Revenus</div>
+            </div>
+            <div class="h-stat">
+              <div class="h-stat-value lwbs-count">${h.lwbs}</div>
+              <div class="h-stat-label">LWBS</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:var(--gray-400);">
+            Attente moy. <strong style="color:var(--gray-700);">${h.avgWaitMinutes} min</strong>
+            · ${h.notifiedCount} en route
+          </div>
+          <div class="h-wait-bar">
+            <div class="h-wait-fill" style="width:${waitPct}%;background:${barColor};"></div>
+          </div>
+          <div style="margin-top:8px;text-align:right;">
+            <a href="/dashboard.html?h=${h.code}" style="font-size:11px;color:var(--blue-600);text-decoration:none;font-weight:500;">
+              Ouvrir dashboard →
+            </a>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderChart(hourly) {
+    const labels = hourly.map(r => {
+      const d = r.hour instanceof Date ? r.hour : new Date(r.hour);
+      return d.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+    });
+    const data = hourly.map(r => r.count);
+
+    if (hourlyChart) hourlyChart.destroy();
+
+    const ctx = document.getElementById('hourlyChart').getContext('2d');
+    hourlyChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Patients enregistrés',
+          data,
+          backgroundColor: 'rgba(62,142,247,0.15)',
+          borderColor: '#3E8EF7',
+          borderWidth: 2,
+          borderRadius: 6,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.raw} patient${ctx.raw > 1 ? 's' : ''}`
+            }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9B9A94' } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { family: 'DM Sans', size: 11 }, color: '#9B9A94' }, grid: { color: '#F0F0EE' } }
+        }
+      }
+    });
+  }
+
+  // Init
+  loadStats();
+  // Refresh every 60s
+  setInterval(loadStats, 60000);
+</script>
+</body>
+</html>
