@@ -266,6 +266,76 @@
     .toast-green { background: var(--green-400); }
     .toast-amber { background: var(--amber-400); }
 
+    /* ── SURGE BUTTON ── */
+    .btn-surge {
+      background: #DC2626; color: white; border: none;
+      font-size: 13px; font-weight: 600; letter-spacing: 0.2px;
+      animation: surge-pulse 2.5s ease-in-out infinite;
+    }
+    .btn-surge:hover { background: #B91C1C; animation: none; }
+    @keyframes surge-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,0.4)} 50%{box-shadow:0 0 0 8px rgba(220,38,38,0)} }
+
+    /* ── SURGE CHOICE BUTTONS ── */
+    .surge-options { display: flex; gap: 10px; margin-bottom: 24px; }
+    .surge-opt {
+      flex: 1; padding: 18px 0; border-radius: 12px; border: 2px solid var(--gray-200);
+      background: var(--white); font-family: 'DM Sans', sans-serif;
+      font-size: 18px; font-weight: 700; color: var(--gray-900); cursor: pointer;
+      transition: all 0.15s; text-align: center;
+    }
+    .surge-opt:hover, .surge-opt.selected { border-color: var(--red-600); background: var(--red-50); color: var(--red-600); }
+    .surge-opt small { display: block; font-size: 11px; font-weight: 400; color: var(--gray-400); margin-top: 4px; }
+
+    /* ── CALL ALERTS BANNER ── */
+    .call-alerts-section {
+      background: var(--white); border-radius: 14px; border: 2px solid #FDE68A;
+      margin-bottom: 18px; overflow: hidden; display: none;
+    }
+    .call-alerts-section.has-alerts { display: block; }
+    .call-alerts-header {
+      background: var(--amber-50); padding: 12px 18px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; font-weight: 600; color: #92400E;
+    }
+    .call-alert-row {
+      padding: 12px 18px; border-bottom: 1px solid var(--gray-100);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .call-alert-row:last-child { border-bottom: none; }
+    .call-alert-info { font-size: 13px; }
+    .call-alert-info strong { color: var(--gray-900); }
+    .call-alert-info span { color: var(--gray-400); font-size: 11px; margin-left: 8px; }
+    .call-tel-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--green-50); color: var(--green-600);
+      border: 1.5px solid #BBF7D0; border-radius: 8px;
+      padding: 6px 12px; font-size: 12px; font-weight: 600;
+      text-decoration: none; margin-right: 8px;
+    }
+    .btn-called {
+      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--gray-200);
+      background: var(--gray-50); color: var(--gray-600);
+      font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer;
+    }
+    .btn-called:hover { background: var(--gray-100); }
+
+    /* ── NON_CONFIRME ROW ── */
+    .chip-non-confirme { background: var(--red-50); color: var(--red-600); }
+    tr.row-non-confirme { background: #FEF2F2; }
+    tr.row-non-confirme:hover { background: #FEE2E2; }
+
+    /* ── NOTIFICATION MODE TOGGLE ── */
+    .notif-toggle { display: flex; gap: 0; border: 1.5px solid var(--gray-200); border-radius: 9px; overflow: hidden; }
+    .notif-toggle-btn {
+      flex: 1; padding: 10px; border: none; font-family: 'DM Sans', sans-serif;
+      font-size: 13px; cursor: pointer; transition: all 0.15s; background: var(--white); color: var(--gray-400);
+    }
+    .notif-toggle-btn.active { background: var(--blue-600); color: white; font-weight: 600; }
+
+    /* ── RAPPORT BTN ── */
+    .btn-rapport { background: var(--gray-50); color: var(--gray-700); border: 1px solid var(--gray-200); }
+    .btn-rapport:hover { background: var(--gray-100); }
+
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
       .sidebar { display: none; }
@@ -298,6 +368,10 @@
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Analytique
       </a>
+      <a class="nav-item" href="/admin.html">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+        Vue Admin
+      </a>
     </div>
 
     <div class="sidebar-section">
@@ -327,6 +401,12 @@
         <p>Urgences P4/P5 — <span id="topbarDate"></span></p>
       </div>
       <div class="topbar-actions">
+        <button class="btn btn-rapport" onclick="downloadReport()">
+          📋 Rapport de quart
+        </button>
+        <button class="btn btn-surge" onclick="openModal('surge')">
+          🚨 Urgence entrante
+        </button>
         <button class="btn btn-scan" onclick="openModal('scan')">
           <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M16 16h2v2h-2zM18 14h2v2h-2zM14 16v2h2v-2zM14 14h2v-2h-2zM16 18h2v2h-2z"/></svg>
           Confirmer retour patient
@@ -364,6 +444,14 @@
         </div>
       </div>
 
+      <!-- CALL ALERTS SECTION (Feature 6) -->
+      <div class="call-alerts-section" id="callAlertsSection">
+        <div class="call-alerts-header">
+          📞 <span>Patients à appeler — Mode appel téléphonique</span>
+        </div>
+        <div id="callAlertsList"></div>
+      </div>
+
       <!-- QUEUE TABLE -->
       <div class="queue-section">
         <div class="queue-header">
@@ -376,6 +464,7 @@
             <button class="filter-tab" onclick="filterQueue('waiting', this)">Domicile</button>
             <button class="filter-tab" onclick="filterQueue('notified', this)">Notifiés</button>
             <button class="filter-tab" onclick="filterQueue('returned', this)">Revenus</button>
+            <button class="filter-tab" onclick="filterQueue('non_confirme', this)" style="color:var(--red-600);">Non confirmés</button>
           </div>
         </div>
 
@@ -417,6 +506,13 @@
     <div class="form-group">
       <label class="form-label">Motif de consultation</label>
       <input class="form-input" type="text" placeholder="Ex: douleur abdominale légère" id="addReason">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mode de notification</label>
+      <div class="notif-toggle">
+        <button class="notif-toggle-btn active" id="btnModeSms" onclick="setNotifMode('sms')">📱 SMS automatique</button>
+        <button class="notif-toggle-btn" id="btnModeCall" onclick="setNotifMode('call')">📞 Appel téléphonique</button>
+      </div>
     </div>
 
     <div class="modal-actions">
@@ -503,6 +599,37 @@
   </div>
 </div>
 
+<!-- ═══ MODAL : URGENCE ENTRANTE (Surge) ═══ -->
+<div class="modal-overlay" id="modal-surge">
+  <div class="modal">
+    <div class="modal-icon" style="background:#FEF2F2;">
+      <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#DC2626" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </div>
+    <div class="modal-title" style="color:#DC2626;">🚨 Urgence entrante</div>
+    <div class="modal-sub">Combien de minutes supplémentaires ajouter au temps d'attente de tous les patients ?</div>
+
+    <div class="surge-options">
+      <button class="surge-opt" onclick="selectSurge(15, this)">+15<small>minutes</small></button>
+      <button class="surge-opt" onclick="selectSurge(30, this)">+30<small>minutes</small></button>
+      <button class="surge-opt" onclick="selectSurge(45, this)">+45<small>minutes</small></button>
+    </div>
+
+    <div style="font-size:12px;color:var(--gray-400);margin-bottom:20px;">
+      Un SMS neutre sera envoyé aux patients concernés.
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('surge')">Annuler</button>
+      <button class="btn btn-surge" id="btnApplySurge" onclick="applySurge()" disabled style="animation:none;flex:1;justify-content:center;">
+        Appliquer le délai
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast">
   <span class="toast-dot toast-green" id="toastDot"></span>
@@ -528,40 +655,54 @@
     now.toLocaleDateString('fr-CA', {weekday:'long', day:'numeric', month:'long'}) + ' — ' +
     now.toLocaleTimeString('fr-CA', {hour:'2-digit', minute:'2-digit'});
 
-  // ── QUEUE DATA ──
+  // ── QUEUE DATA ── (P4 sorted before P5, then by time)
   let patients = [
-    { id: 'FS-0081', reason: 'Douleur genou', priority: 'P4', time: '18:32', status: 'notified', code: '4821' },
-    { id: 'FS-0082', reason: 'Éruption cutanée', priority: 'P5', time: '18:47', status: 'notified', code: '3317' },
-    { id: 'FS-0083', reason: 'Mal de gorge', priority: 'P5', time: '18:55', status: 'waiting', code: '7042' },
-    { id: 'FS-0084', reason: 'Contusion poignet', priority: 'P4', time: '19:03', status: 'waiting', code: '5591' },
-    { id: 'FS-0085', reason: 'Fièvre persistante', priority: 'P4', time: '19:11', status: 'notified', code: '2288' },
-    { id: 'FS-0086', reason: 'Douleur dos', priority: 'P5', time: '19:18', status: 'waiting', code: '6634' },
-    { id: 'FS-0087', reason: 'Nausées légères', priority: 'P5', time: '19:24', status: 'returned', code: '9103' },
-    { id: 'FS-0088', reason: 'Coupure main', priority: 'P4', time: '19:31', status: 'returned', code: '1456' },
+    { id: 'FS-0081', reason: 'Douleur genou', priority: 'P4', time: '18:32', status: 'notified', code: '4821', notifMode: 'sms' },
+    { id: 'FS-0084', reason: 'Contusion poignet', priority: 'P4', time: '19:03', status: 'waiting', code: '5591', notifMode: 'sms' },
+    { id: 'FS-0085', reason: 'Fièvre persistante', priority: 'P4', time: '19:11', status: 'notified', code: '2288', notifMode: 'call', phone: '5141234567' },
+    { id: 'FS-0088', reason: 'Coupure main', priority: 'P4', time: '19:31', status: 'returned', code: '1456', notifMode: 'sms' },
+    { id: 'FS-0082', reason: 'Éruption cutanée', priority: 'P5', time: '18:47', status: 'notified', code: '3317', notifMode: 'sms' },
+    { id: 'FS-0083', reason: 'Mal de gorge', priority: 'P5', time: '18:55', status: 'waiting', code: '7042', notifMode: 'sms' },
+    { id: 'FS-0086', reason: 'Douleur dos', priority: 'P5', time: '19:18', status: 'waiting', code: '6634', notifMode: 'call', phone: '5149876543' },
+    { id: 'FS-0087', reason: 'Nausées légères', priority: 'P5', time: '19:24', status: 'returned', code: '9103', notifMode: 'sms' },
   ];
 
   let currentFilter = 'all';
 
+  // ── RENDER QUEUE ──
   function renderQueue() {
     const body = document.getElementById('queueBody');
-    const filtered = currentFilter === 'all' ? patients : patients.filter(p => p.status === currentFilter);
+    const filtered = currentFilter === 'all'
+      ? patients
+      : patients.filter(p => p.status === currentFilter);
+
+    const statusMap = {
+      waiting:       `<span class="status-chip chip-waiting"><span class="chip-dot"></span>À domicile</span>`,
+      notified:      `<span class="status-chip chip-notified"><span class="chip-dot"></span>Notifié — En route</span>`,
+      returned:      `<span class="status-chip chip-returned"><span class="chip-dot"></span>Revenu</span>`,
+      noshow:        `<span class="status-chip chip-noshow"><span class="chip-dot"></span>Absent</span>`,
+      non_confirme:  `<span class="status-chip chip-non-confirme"><span class="chip-dot"></span>Non confirmé</span>`,
+    };
+
     body.innerHTML = filtered.map(p => {
-      const statusMap = {
-        waiting:  `<span class="status-chip chip-waiting"><span class="chip-dot"></span>À domicile</span>`,
-        notified: `<span class="status-chip chip-notified"><span class="chip-dot"></span>Notifié — En route</span>`,
-        returned: `<span class="status-chip chip-returned"><span class="chip-dot"></span>Revenu</span>`,
-        noshow:   `<span class="status-chip chip-noshow"><span class="chip-dot"></span>Absent</span>`,
-      };
+      const isNonConfirme = p.status === 'non_confirme';
+      const modeIcon = p.notifMode === 'call' ? '📞' : '📱';
+
       const actionsMap = {
-        waiting:  `<button class="action-btn action-notify" onclick="notifyPatient('${p.id}')">Notifier</button>`,
+        waiting: `<button class="action-btn action-notify" onclick="notifyPatient('${p.id}')">Notifier</button>`,
         notified: `<button class="action-btn action-confirm" onclick="confirmReturn('${p.id}')">✓ Présence</button>
                    <button class="action-btn action-noshow" style="margin-left:5px" onclick="markNoShow('${p.id}')">Absent</button>`,
         returned: `<span style="font-size:11px;color:var(--gray-300);">En attente soins</span>`,
-        noshow:   `<span style="font-size:11px;color:var(--red-400);">Réassigné</span>`,
+        noshow: `<span style="font-size:11px;color:var(--red-400);">Réassigné</span>`,
+        non_confirme: `<span style="font-size:11px;color:var(--red-600);font-weight:600;">⚠️ Alerte — Réassigner</span>`,
       };
+
       return `
-        <tr>
-          <td><div class="patient-id">${p.id}</div><div class="patient-sub">${p.reason}</div></td>
+        <tr${isNonConfirme ? ' class="row-non-confirme"' : ''}>
+          <td>
+            <div class="patient-id">${p.id} <span style="font-size:10px;color:var(--gray-400);">${modeIcon}</span></div>
+            <div class="patient-sub">${p.reason}</div>
+          </td>
           <td><span class="priority-badge ${p.priority.toLowerCase()}">${p.priority}</span></td>
           <td style="color:var(--gray-400);font-size:12px;">${p.time}</td>
           <td>${statusMap[p.status] || ''}</td>
@@ -569,6 +710,21 @@
           <td>${actionsMap[p.status] || ''}</td>
         </tr>`;
     }).join('');
+
+    // Update KPIs
+    document.getElementById('kpiTotal').textContent =
+      patients.filter(p => ['waiting','notified'].includes(p.status)).length;
+    document.querySelector('#kpiTotal').closest('.kpi-card').nextElementSibling.querySelector('.kpi-value').textContent =
+      patients.filter(p => p.status === 'notified').length;
+    document.querySelector('.queue-count').textContent =
+      filtered.length + ' patient' + (filtered.length > 1 ? 's' : '');
+
+    // Non_confirme alert count in filter tab
+    const ncCount = patients.filter(p => p.status === 'non_confirme').length;
+    const ncTab = document.querySelector('.filter-tab[onclick*="non_confirme"]');
+    if (ncTab) ncTab.textContent = ncCount > 0 ? `Non confirmés (${ncCount})` : 'Non confirmés';
+
+    renderCallAlerts();
   }
 
   function filterQueue(f, btn) {
@@ -578,24 +734,59 @@
     renderQueue();
   }
 
+  // ── CALL ALERTS (Feature 6) ──
+  function renderCallAlerts() {
+    const callPatients = patients.filter(p => p.notifMode === 'call' && ['waiting','notified'].includes(p.status));
+    const section = document.getElementById('callAlertsSection');
+    const list = document.getElementById('callAlertsList');
+
+    if (callPatients.length === 0) {
+      section.classList.remove('has-alerts');
+      return;
+    }
+    section.classList.add('has-alerts');
+
+    list.innerHTML = callPatients.map(p => `
+      <div class="call-alert-row">
+        <div class="call-alert-info">
+          <strong>${p.id}</strong> — ${p.reason}
+          <span>${p.priority} · ${p.status === 'notified' ? '⚠️ À appeler MAINTENANT' : '~30 min'}</span>
+        </div>
+        <div>
+          ${p.phone ? `<a class="call-tel-link" href="tel:${p.phone}">📞 ${p.phone.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')}</a>` : ''}
+          <button class="btn-called" onclick="markCalled('${p.id}')">Appelé ✓</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function markCalled(id) {
+    const p = patients.find(x => x.id === id);
+    if (!p) return;
+    p.status = 'notified';
+    renderQueue();
+    showToast('Appel enregistré — ' + id, 'green');
+  }
+
   // ── ACTIONS ──
   async function notifyPatient(id) {
     const p = patients.find(x => x.id === id);
     if (!p) return;
     p.status = 'notified'; renderQueue();
-    showToast('📱 SMS envoyé — ' + id, 'green');
+    const label = p.notifMode === 'call' ? '📞 À appeler' : '📱 SMS envoyé';
+    showToast(label + ' — ' + id, 'green');
     try {
-      await fetch('/api/patients/' + (p.dbId||id) + '/notify', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json',
-          'Authorization':'Bearer ' + localStorage.getItem('filesante_token')}
+      await fetch('/api/patients/' + (p.dbId || id) + '/notify', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }
       });
-    } catch(e) { console.log('mode demo'); }
+    } catch (_) {}
   }
+
   function confirmReturn(id) {
     const p = patients.find(x => x.id === id);
     if (p) { p.status = 'returned'; renderQueue(); showToast('Présence confirmée — ' + id, 'green'); }
   }
+
   function markNoShow(id) {
     const p = patients.find(x => x.id === id);
     if (p) { p.status = 'noshow'; renderQueue(); showToast('Patient marqué absent — ' + id, 'amber'); }
@@ -603,23 +794,37 @@
 
   // ── ADD PATIENT ──
   let nextId = 89;
+  let currentNotifMode = 'sms';
+
+  function setNotifMode(mode) {
+    currentNotifMode = mode;
+    document.getElementById('btnModeSms').classList.toggle('active', mode === 'sms');
+    document.getElementById('btnModeCall').classList.toggle('active', mode === 'call');
+  }
+
   function addPatient() {
     const priority = document.getElementById('addPriority').value;
     const reason = document.getElementById('addReason').value || 'Consultation générale';
     const code = String(Math.floor(1000 + Math.random() * 9000));
     const patientId = 'FS-00' + nextId++;
     const mins = now.getMinutes().toString().padStart(2,'0');
-    patients.unshift({ id: patientId, reason, priority, time: now.getHours() + ':' + mins, status: 'waiting', code });
+
+    // Insert in correct priority order: P4 before P5
+    const newPatient = { id: patientId, reason, priority, time: now.getHours() + ':' + mins, status: 'waiting', code, notifMode: currentNotifMode };
+    const insertIdx = priority === 'P4'
+      ? patients.findIndex(p => p.priority === 'P5' || ['returned','noshow','non_confirme','cancelled'].includes(p.status))
+      : patients.findIndex(p => ['returned','noshow','non_confirme','cancelled'].includes(p.status));
+    if (insertIdx === -1) patients.push(newPatient);
+    else patients.splice(insertIdx, 0, newPatient);
+
     closeModal('add');
     renderQueue();
-    document.getElementById('kpiTotal').textContent = patients.filter(p => ['waiting','notified','returned'].includes(p.status)).length;
     document.getElementById('addReason').value = '';
+    setNotifMode('sms');
 
     // Show QR modal
     document.getElementById('qrPatientInfo').textContent = patientId + ' · ' + priority + ' · ' + reason;
     document.getElementById('qrReturnCode').textContent = code;
-
-    // Generate QR code
     const qrUrl = window.location.origin + '/patient.html?code=' + code + '&id=' + patientId + '&h=' + hospitalCode;
     document.getElementById('qrContainer').innerHTML = '';
     if (!window.QRCode) {
@@ -627,19 +832,61 @@
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
       document.head.appendChild(script);
       script.onload = () => generateQR(qrUrl);
-    } else {
-      generateQR(qrUrl);
-    }
+    } else { generateQR(qrUrl); }
     openModal('qr');
-    showToast('Patient ajouté · Code retour : ' + code, 'green');
+    showToast('Patient ajouté · Code : ' + code, 'green');
   }
 
   function generateQR(url) {
     new QRCode(document.getElementById('qrContainer'), {
       text: url, width: 200, height: 200,
-      colorDark: '#1A1A18', colorLight: '#FFFFFF',
-      correctLevel: QRCode.CorrectLevel.M
+      colorDark: '#1A1A18', colorLight: '#FFFFFF', correctLevel: QRCode.CorrectLevel.M
     });
+  }
+
+  // ── SURGE (Feature 5) ──
+  let selectedSurgeMinutes = null;
+
+  function selectSurge(mins, btn) {
+    selectedSurgeMinutes = mins;
+    document.querySelectorAll('.surge-opt').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById('btnApplySurge').disabled = false;
+  }
+
+  async function applySurge() {
+    if (!selectedSurgeMinutes) return;
+    const mins = selectedSurgeMinutes;
+    closeModal('surge');
+    selectedSurgeMinutes = null;
+    document.querySelectorAll('.surge-opt').forEach(b => b.classList.remove('selected'));
+    document.getElementById('btnApplySurge').disabled = true;
+
+    // Apply locally to all waiting/notified patients
+    let affected = 0;
+    patients.forEach(p => {
+      if (['waiting','notified'].includes(p.status)) {
+        p.estWait = (p.estWait || 120) + mins;
+        affected++;
+      }
+    });
+    renderQueue();
+    showToast(`🚨 +${mins} min appliqués · SMS envoyés à ${affected} patients`, 'amber');
+
+    // Call backend
+    try {
+      await fetch('/api/hospitals/' + hospitalCode + '/surge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ minutes: mins })
+      });
+    } catch (_) {}
+  }
+
+  // ── PDF RAPPORT (Feature 8) ──
+  function downloadReport() {
+    window.open('/api/hospitals/' + hospitalCode + '/report', '_blank');
+    showToast('📋 Génération du rapport...', 'green');
   }
 
   // ── SCAN / CODE CONFIRM ──
@@ -663,18 +910,13 @@
       btnCamera.onclick = stopCamera;
       scanLine.style.display = 'block';
 
-      // Load jsQR and scan
       if (!window.jsQR) {
         const script = document.createElement('script');
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
         document.head.appendChild(script);
         script.onload = () => startScanning();
-      } else {
-        startScanning();
-      }
-    } catch(e) {
-      showToast('Caméra non disponible — utilisez le code', 'amber');
-    }
+      } else { startScanning(); }
+    } catch (_) { showToast('Caméra non disponible — utilisez le code', 'amber'); }
   }
 
   function startScanning() {
@@ -683,26 +925,15 @@
     const ctx = canvas.getContext('2d');
     scanInterval = setInterval(() => {
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, imageData.width, imageData.height);
         if (code) {
-          stopCamera();
-          closeModal('scan');
-          // QR contient le code patient ou token
-          const scannedCode = code.data;
-          const p = patients.find(x => x.code === scannedCode || x.id === scannedCode || scannedCode.includes(x.code));
-          if (p) {
-            p.status = 'returned'; renderQueue();
-            showToast('✅ QR scanné · Présence confirmée — ' + p.id, 'green');
-          } else {
-            // Confirme le premier patient notifié par défaut
-            const notified = patients.find(x => x.status === 'notified');
-            if (notified) { notified.status = 'returned'; renderQueue(); }
-            showToast('✅ QR scanné · Présence confirmée', 'green');
-          }
+          stopCamera(); closeModal('scan');
+          const p = patients.find(x => x.code === code.data || code.data.includes(x.code));
+          if (p) { p.status = 'returned'; renderQueue(); showToast('✅ QR scanné · Présence confirmée — ' + p.id, 'green'); }
+          else { showToast('✅ QR scanné · Présence confirmée', 'green'); }
         }
       }
     }, 300);
@@ -711,13 +942,11 @@
   function stopCamera() {
     if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
     if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
-    const video = document.getElementById('scanVideo');
-    const placeholder = document.getElementById('scanPlaceholder');
-    const btnCamera = document.getElementById('btnCamera');
-    video.style.display = 'none';
-    placeholder.style.display = 'flex';
-    btnCamera.textContent = '📷 Activer caméra';
-    btnCamera.onclick = startCamera;
+    document.getElementById('scanVideo').style.display = 'none';
+    document.getElementById('scanPlaceholder').style.display = 'flex';
+    const btn = document.getElementById('btnCamera');
+    btn.textContent = '📷 Activer caméra';
+    btn.onclick = startCamera;
   }
 
   function moveDigit(el, nextId) {
@@ -733,18 +962,22 @@
     const code = ['d1','d2','d3','d4'].map(id => document.getElementById(id).value).join('');
     const p = patients.find(x => x.code === code);
     closeModal('scan');
-    if (p) {
-      p.status = 'returned'; renderQueue();
-      showToast('Code ' + code + ' · Présence confirmée — ' + p.id, 'green');
-    } else {
-      showToast('Code introuvable — vérifiez le numéro', 'amber');
-    }
+    if (p) { p.status = 'returned'; renderQueue(); showToast('Code ' + code + ' · Présence confirmée — ' + p.id, 'green'); }
+    else { showToast('Code introuvable — vérifiez le numéro', 'amber'); }
     ['d1','d2','d3','d4'].forEach(id => document.getElementById(id).value = '');
   }
 
   // ── MODAL HELPERS ──
   function openModal(id) { document.getElementById('modal-' + id).classList.add('open'); }
-  function closeModal(id) { document.getElementById('modal-' + id).classList.remove('open'); if(id==='scan') stopCamera(); }
+  function closeModal(id) {
+    document.getElementById('modal-' + id).classList.remove('open');
+    if (id === 'scan') stopCamera();
+    if (id === 'surge') {
+      selectedSurgeMinutes = null;
+      document.querySelectorAll('.surge-opt').forEach(b => b.classList.remove('selected'));
+      document.getElementById('btnApplySurge').disabled = true;
+    }
+  }
   document.querySelectorAll('.modal-overlay').forEach(m => {
     m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
   });
