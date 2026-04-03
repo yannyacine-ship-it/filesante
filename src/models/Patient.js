@@ -26,7 +26,7 @@ const Patient = {
   /**
    * Crée un nouveau patient dans la file
    */
-  async create({ hospitalCode, priority, reason, createdBy }) {
+  async create({ hospitalCode, priority, reason, createdBy, notificationMode = 'sms' }) {
     const token = generateToken();
     const uuid = uuidv4();
     
@@ -62,11 +62,11 @@ const Patient = {
     const { rows } = await db.query(`
       INSERT INTO patients (
         uuid, token, hospital_id, created_by, priority, reason,
-        estimated_wait_minutes, position_in_queue, expires_at
+        estimated_wait_minutes, position_in_queue, expires_at, notification_mode
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
-    `, [uuid, token, hospitalId, createdBy, priority, reason, estimatedWait, position, expiresAt]);
+    `, [uuid, token, hospitalId, createdBy, priority, reason, estimatedWait, position, expiresAt, notificationMode]);
     
     logger.logPatientAction('created', rows[0].id, hospitalCode, { priority, position });
     
@@ -128,19 +128,24 @@ const Patient = {
   },
   
   /**
-   * Notifie un patient (45 min avant)
+   * Notifie un patient — SMS "Partez maintenant" (30 min avant)
+   * Sets confirmation_deadline = NOW + 30min
    */
   async notify(patientId) {
     const expiresAt = calculateExpiresAt('notified');
-    
+    const confirmationDeadline = new Date(Date.now() + 30 * 60 * 1000);
+
     const { rows } = await db.query(`
       UPDATE patients SET
         status = 'notified',
         notified_at = CURRENT_TIMESTAMP,
-        expires_at = $1
-      WHERE id = $2 AND status = 'waiting'
+        expires_at = $1,
+        sms_30_sent = true,
+        sms_30_sent_at = CURRENT_TIMESTAMP,
+        confirmation_deadline = $2
+      WHERE id = $3 AND status = 'waiting'
       RETURNING *
-    `, [expiresAt, patientId]);
+    `, [expiresAt, confirmationDeadline, patientId]);
     
     if (rows.length === 0) {
       throw new Error('Patient non trouvé ou statut invalide');
@@ -345,7 +350,7 @@ const Patient = {
       paramIndex++;
     }
     
-    query += ` ORDER BY p.created_at ASC LIMIT $${paramIndex}`;
+    query += ` ORDER BY CASE p.priority WHEN 'P4' THEN 1 WHEN 'P5' THEN 2 ELSE 3 END ASC, p.created_at ASC LIMIT $${paramIndex}`;
     params.push(limit);
     
     const { rows } = await db.query(query, params);
@@ -397,25 +402,175 @@ const Patient = {
   },
   
   /**
-   * Récupère les patients à notifier (45 min avant passage estimé)
+   * Legacy: patients à notifier (45 min avant) — conservé pour compatibilité
    */
   async getPatientsToNotify() {
-    const threshold = config.alerts.notifyBefore; // 45 min en ms
-    
+    const threshold = config.alerts.notifyBefore;
     const { rows } = await db.query(`
-      SELECT p.*, h.code as hospital_code
+      SELECT p.*, h.code as hospital_code, h.name as hospital_name
       FROM patients p
       JOIN hospitals h ON p.hospital_id = h.id
       WHERE p.status = 'waiting'
         AND p.phone IS NOT NULL
+        AND p.notification_mode = 'sms'
+        AND p.sms_30_sent = false
         AND p.estimated_wait_minutes IS NOT NULL
         AND (
-          EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - p.activated_at)) * 1000 
+          EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - p.activated_at)) * 1000
           + $1
         ) >= (p.estimated_wait_minutes * 60 * 1000)
     `, [threshold]);
-    
     return rows;
+  },
+
+  /**
+   * Patients à notifier 60 min avant (premier SMS)
+   */
+  async getPatientsFor60min() {
+    const { rows } = await db.query(`
+      SELECT p.*, h.code as hospital_code, h.name as hospital_name,
+        COALESCE(h.settings->>'sms_delay_60', '60')::int as delay_60
+      FROM patients p
+      JOIN hospitals h ON p.hospital_id = h.id
+      WHERE p.status = 'waiting'
+        AND p.phone IS NOT NULL
+        AND p.notification_mode = 'sms'
+        AND p.sms_60_sent = false
+        AND p.activated_at IS NOT NULL
+        AND p.estimated_wait_minutes IS NOT NULL
+        AND (
+          p.estimated_wait_minutes * 60
+          - EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - p.activated_at))
+        ) BETWEEN 0 AND COALESCE((h.settings->>'sms_delay_60')::int, 60) * 60
+    `);
+    return rows;
+  },
+
+  /**
+   * Patients à notifier 30 min avant (second SMS "Partez maintenant")
+   */
+  async getPatientsFor30min() {
+    const { rows } = await db.query(`
+      SELECT p.*, h.code as hospital_code, h.name as hospital_name,
+        COALESCE(h.settings->>'sms_delay_30', '30')::int as delay_30
+      FROM patients p
+      JOIN hospitals h ON p.hospital_id = h.id
+      WHERE p.status = 'waiting'
+        AND p.phone IS NOT NULL
+        AND p.notification_mode = 'sms'
+        AND p.sms_30_sent = false
+        AND p.activated_at IS NOT NULL
+        AND p.estimated_wait_minutes IS NOT NULL
+        AND (
+          p.estimated_wait_minutes * 60
+          - EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - p.activated_at))
+        ) BETWEEN 0 AND COALESCE((h.settings->>'sms_delay_30')::int, 30) * 60
+    `);
+    return rows;
+  },
+
+  /**
+   * Marque le patient comme ayant reçu le SMS 60min
+   */
+  async markSms60Sent(patientId) {
+    const { rows } = await db.query(`
+      UPDATE patients SET sms_60_sent = true, sms_60_sent_at = CURRENT_TIMESTAMP
+      WHERE id = $1 RETURNING *
+    `, [patientId]);
+    return rows[0];
+  },
+
+  /**
+   * Patients notifiés dont la deadline de confirmation est dépassée ou proche
+   */
+  async getPendingConfirmations() {
+    const { rows } = await db.query(`
+      SELECT p.*, h.code as hospital_code, h.name as hospital_name,
+        EXTRACT(EPOCH FROM (p.confirmation_deadline - CURRENT_TIMESTAMP)) as seconds_remaining
+      FROM patients p
+      JOIN hospitals h ON p.hospital_id = h.id
+      WHERE p.status = 'notified'
+        AND p.confirmation_deadline IS NOT NULL
+    `);
+    return rows;
+  },
+
+  /**
+   * Marque un patient comme non confirmé
+   */
+  async markNonConfirme(patientId) {
+    const { rows } = await db.query(`
+      UPDATE patients SET
+        status = 'non_confirme',
+        non_confirme_at = CURRENT_TIMESTAMP,
+        expires_at = CURRENT_TIMESTAMP + INTERVAL '24 hours'
+      WHERE id = $1 AND status = 'notified'
+      RETURNING *
+    `, [patientId]);
+
+    if (rows.length === 0) throw new Error('Patient non trouvé ou statut invalide');
+
+    await db.query(`
+      INSERT INTO daily_stats (hospital_id, date, total_noshow)
+      VALUES ($1, CURRENT_DATE, 1)
+      ON CONFLICT (hospital_id, date)
+      DO UPDATE SET total_noshow = daily_stats.total_noshow + 1
+    `, [rows[0].hospital_id]);
+
+    return rows[0];
+  },
+
+  /**
+   * Patients en mode appel qui ont besoin d'être appelés (60min ou 30min)
+   */
+  async getCallAlerts(hospitalCode) {
+    const { rows } = await db.query(`
+      SELECT p.*, h.code as hospital_code,
+        (p.estimated_wait_minutes * 60 - EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - p.activated_at))) as remaining_seconds
+      FROM patients p
+      JOIN hospitals h ON p.hospital_id = h.id
+      WHERE h.code = $1
+        AND p.status = 'waiting'
+        AND p.notification_mode = 'call'
+        AND p.activated_at IS NOT NULL
+        AND p.estimated_wait_minutes IS NOT NULL
+        AND (
+          p.estimated_wait_minutes * 60 - EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - p.activated_at))
+        ) BETWEEN 0 AND 3600
+      ORDER BY CASE p.priority WHEN 'P4' THEN 1 WHEN 'P5' THEN 2 END ASC, p.created_at ASC
+    `, [hospitalCode]);
+    return rows;
+  },
+
+  /**
+   * Marque un patient en mode appel comme notifié par téléphone
+   */
+  async markCallNotified(patientId, slot) {
+    const col = slot === 60 ? 'call_notified_60' : 'call_notified_30';
+    const { rows } = await db.query(
+      `UPDATE patients SET ${col} = true WHERE id = $1 RETURNING *`,
+      [patientId]
+    );
+    return rows[0];
+  },
+
+  /**
+   * Avance le prochain patient de la file (après non_confirme)
+   * Envoie immédiatement le SMS 30min au suivant
+   */
+  async promoteNext(hospitalId) {
+    const { rows } = await db.query(`
+      SELECT p.*, h.code as hospital_code, h.name as hospital_name
+      FROM patients p
+      JOIN hospitals h ON p.hospital_id = h.id
+      WHERE p.hospital_id = $1
+        AND p.status = 'waiting'
+        AND p.notification_mode = 'sms'
+        AND p.sms_30_sent = false
+      ORDER BY CASE p.priority WHEN 'P4' THEN 1 WHEN 'P5' THEN 2 END ASC, p.created_at ASC
+      LIMIT 1
+    `, [hospitalId]);
+    return rows[0] || null;
   },
   
   /**

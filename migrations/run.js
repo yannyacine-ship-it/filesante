@@ -142,7 +142,8 @@ const migrations = [
       CREATE INDEX IF NOT EXISTS idx_sms_status ON sms_notifications(status);
       CREATE INDEX IF NOT EXISTS idx_daily_stats_date ON daily_stats(hospital_id, date);
       CREATE INDEX IF NOT EXISTS idx_activity_logs_hospital ON activity_logs(hospital_id, created_at);
-      
+      CREATE INDEX IF NOT EXISTS idx_patients_priority ON patients(hospital_id, priority, created_at);
+
       -- Fonction pour mettre à jour updated_at automatiquement
       CREATE OR REPLACE FUNCTION update_updated_at_column()
       RETURNS TRIGGER AS $$
@@ -169,9 +170,40 @@ const migrations = [
         FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
       
       DROP TRIGGER IF EXISTS update_daily_stats_updated_at ON daily_stats;
-      CREATE TRIGGER update_daily_stats_updated_at 
-        BEFORE UPDATE ON daily_stats 
+      CREATE TRIGGER update_daily_stats_updated_at
+        BEFORE UPDATE ON daily_stats
         FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    `
+  },
+  {
+    name: '002_notification_features',
+    up: `
+      -- Dual SMS tracking
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS notification_mode VARCHAR(10) DEFAULT 'sms';
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS sms_60_sent BOOLEAN DEFAULT false;
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS sms_60_sent_at TIMESTAMP WITH TIME ZONE;
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS sms_30_sent BOOLEAN DEFAULT false;
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS sms_30_sent_at TIMESTAMP WITH TIME ZONE;
+
+      -- Confirmation tracking (30min window after "Partez maintenant")
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS confirmation_deadline TIMESTAMP WITH TIME ZONE;
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS confirmation_reminder_sent BOOLEAN DEFAULT false;
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS non_confirme_at TIMESTAMP WITH TIME ZONE;
+
+      -- Surge tracking
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS surge_added_minutes INTEGER DEFAULT 0;
+
+      -- Call mode tracking (nurse acknowledges call)
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS call_notified_60 BOOLEAN DEFAULT false;
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS call_notified_30 BOOLEAN DEFAULT false;
+
+      -- Extend status enum to include non_confirme
+      ALTER TABLE patients DROP CONSTRAINT IF EXISTS patients_status_check;
+      ALTER TABLE patients ADD CONSTRAINT patients_status_check
+        CHECK (status IN ('pending','waiting','notified','returned','noshow','cancelled','non_confirme'));
+
+      -- Hospital surge delay config (stored in settings JSONB)
+      -- hospitals.settings -> { sms_delay_60: 60, sms_delay_30: 30 }
     `
   }
 ];
