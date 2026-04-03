@@ -10,29 +10,11 @@ const db = require('../../config/database');
 const logger = require('../utils/logger');
 
 const jobs = {
-  /**
-   * Nettoyage des patients expirés
-   * Exécuté toutes les 15 minutes
-   */
   cleanup: null,
-  
-  /**
-   * Envoi des notifications 45 min avant
-   * Exécuté toutes les 5 minutes
-   */
   notifications: null,
-  
-  /**
-   * Escalade des patients en attente prolongée
-   * Exécuté toutes les 30 minutes
-   */
   escalation: null,
-  
-  /**
-   * Reset des stats journalières
-   * Exécuté à 6h00 AM
-   */
-  dailyReset: null
+  dailyReset: null,
+  confirmationCheck: null
 };
 
 /**
@@ -59,38 +41,98 @@ async function runCleanup() {
 }
 
 /**
- * Job d'envoi des notifications
+ * Job double SMS: 60 min puis 30 min avant passage
  */
 async function runNotifications() {
   logger.logJob('notifications', 'started');
-  
+
   try {
-    const patientsToNotify = await Patient.getPatientsToNotify();
-    
-    for (const patient of patientsToNotify) {
+    // --- SMS 60 min: "Votre tour approche" ---
+    const patients60 = await Patient.getPatientsFor60min();
+    for (const patient of patients60) {
       try {
-        // Envoyer le SMS
-        const result = await SmsService.sendNotification(patient);
-        
+        const result = await SmsService.sendApproaching(patient);
         if (result.success) {
-          // Mettre à jour le statut du patient
-          await Patient.notify(patient.id);
+          await Patient.markSms60Sent(patient.id);
         }
-      } catch (error) {
-        logger.error('Erreur notification patient', { 
-          patientId: patient.id, 
-          error: error.message 
-        });
+      } catch (err) {
+        logger.error('Erreur SMS 60min', { patientId: patient.id, error: err.message });
       }
     }
-    
-    if (patientsToNotify.length > 0) {
-      logger.logJob('notifications', 'completed', { 
-        notifiedCount: patientsToNotify.length 
+
+    // --- SMS 30 min: "Partez maintenant" ---
+    const patients30 = await Patient.getPatientsFor30min();
+    for (const patient of patients30) {
+      try {
+        const result = await SmsService.sendDepartNow(patient);
+        if (result.success) {
+          await Patient.notify(patient.id); // sets sms_30_sent + confirmation_deadline
+        }
+      } catch (err) {
+        logger.error('Erreur SMS 30min', { patientId: patient.id, error: err.message });
+      }
+    }
+
+    const total = patients60.length + patients30.length;
+    if (total > 0) {
+      logger.logJob('notifications', 'completed', {
+        sms60Count: patients60.length,
+        sms30Count: patients30.length
       });
     }
   } catch (error) {
     logger.logJob('notifications', 'error', { error: error.message });
+  }
+}
+
+/**
+ * Job de vérification des confirmations (30 min après "Partez maintenant")
+ * - À 15 min restantes: rappel SMS
+ * - À 0 min: status = non_confirme, prochain patient avancé
+ */
+async function runConfirmationCheck() {
+  try {
+    const pending = await Patient.getPendingConfirmations();
+
+    for (const patient of pending) {
+      const secsRemaining = parseFloat(patient.seconds_remaining);
+
+      // Rappel à 15 min restantes
+      if (secsRemaining <= 15 * 60 && secsRemaining > 0 && !patient.confirmation_reminder_sent && patient.phone) {
+        try {
+          await SmsService.sendConfirmationReminder(patient);
+          await db.query(
+            'UPDATE patients SET confirmation_reminder_sent = true WHERE id = $1',
+            [patient.id]
+          );
+          logger.info('Rappel confirmation envoyé', { patientId: patient.id });
+        } catch (err) {
+          logger.error('Erreur rappel confirmation', { patientId: patient.id, error: err.message });
+        }
+      }
+
+      // Deadline dépassée → non_confirme
+      if (secsRemaining <= 0) {
+        try {
+          const marked = await Patient.markNonConfirme(patient.id);
+          logger.info('Patient marqué non_confirme', { patientId: patient.id });
+
+          // Promouvoir le prochain patient en file
+          const next = await Patient.promoteNext(marked.hospital_id);
+          if (next) {
+            const result = await SmsService.sendDepartNow(next);
+            if (result.success) {
+              await Patient.notify(next.id);
+              logger.info('Prochain patient promu', { patientId: next.id });
+            }
+          }
+        } catch (err) {
+          logger.error('Erreur marquage non_confirme', { patientId: patient.id, error: err.message });
+        }
+      }
+    }
+  } catch (error) {
+    logger.error('Erreur job confirmation check', { error: error.message });
   }
 }
 
@@ -174,6 +216,13 @@ function startJobs() {
     timezone: 'America/Montreal'
   });
   logger.info('Job notifications planifié: */5 * * * *');
+
+  // Vérification confirmations toutes les 2 minutes
+  jobs.confirmationCheck = cron.schedule('*/2 * * * *', runConfirmationCheck, {
+    scheduled: true,
+    timezone: 'America/Montreal'
+  });
+  logger.info('Job confirmationCheck planifié: */2 * * * *');
   
   // Escalation toutes les 30 minutes
   jobs.escalation = cron.schedule(config.cron.escalation, runEscalation, {
@@ -214,6 +263,8 @@ async function runManually(jobName) {
       return runCleanup();
     case 'notifications':
       return runNotifications();
+    case 'confirmationCheck':
+      return runConfirmationCheck();
     case 'escalation':
       return runEscalation();
     case 'dailyReset':

@@ -108,19 +108,47 @@ const SmsService = {
   },
   
   /**
-   * Envoie la notification 45 minutes avant
+   * SMS 60 min avant: "Votre tour approche — préparez-vous"
+   */
+  async sendApproaching(patient) {
+    const hospitalName = patient.hospital_name || 'l\'urgence';
+    const code = patient.token || '????';
+    const message = `FileSanté: Votre tour approche à ${hospitalName}, préparez-vous. Votre code: ${code}`;
+    return this.send(patient.phone, message, { type: 'notification', patientId: patient.id });
+  },
+
+  /**
+   * SMS 30 min avant: "Partez maintenant"
+   */
+  async sendDepartNow(patient) {
+    const hospitalName = patient.hospital_name || 'l\'urgence';
+    const code = patient.token || '????';
+    const message = `FileSanté: Partez maintenant vers ${hospitalName}. Présentez code ${code} au triage.`;
+    return this.send(patient.phone, message, { type: 'notification', patientId: patient.id });
+  },
+
+  /**
+   * Rappel de confirmation (15 min sans réponse)
+   */
+  async sendConfirmationReminder(patient) {
+    const hospitalName = patient.hospital_name || 'l\'urgence';
+    const message = `FileSanté: Rappel — êtes-vous en route vers ${hospitalName} ? Confirmez votre arrivée sur l'application ou votre place sera réassignée dans 15 minutes.`;
+    return this.send(patient.phone, message, { type: 'reminder', patientId: patient.id });
+  },
+
+  /**
+   * SMS ajustement temps suite à une surcharge (Surge)
+   */
+  async sendSurgeAdjustment(patient) {
+    const message = `FileSanté: Votre temps d'attente a été légèrement ajusté. Nous vous recontactons.`;
+    return this.send(patient.phone, message, { type: 'reminder', patientId: patient.id });
+  },
+
+  /**
+   * Envoie la notification (legacy — SMS 30min "Partez maintenant")
    */
   async sendNotification(patient) {
-    const hospitalName = patient.hospital_name || 'l\'urgence';
-    const message = `🔔 FileSanté: C'est bientôt votre tour! ` +
-      `Dirigez-vous vers ${hospitalName} maintenant. ` +
-      `Temps estimé avant passage: ~45 min. ` +
-      `Présentez-vous à l'accueil en mentionnant FileSanté.`;
-    
-    return this.send(patient.phone, message, {
-      type: 'notification',
-      patientId: patient.id
-    });
+    return this.sendDepartNow(patient);
   },
   
   /**

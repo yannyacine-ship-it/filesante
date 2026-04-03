@@ -32,19 +32,21 @@ router.post('/',
   [
     body('hospitalCode').isIn(Object.keys(config.hospitals)).withMessage('Code hôpital invalide'),
     body('priority').isIn(config.priorities).withMessage('Priorité invalide (P4 ou P5)'),
-    body('reason').optional().isString().isLength({ max: 100 })
+    body('reason').optional().isString().isLength({ max: 100 }),
+    body('notificationMode').optional().isIn(['sms', 'call'])
   ],
   validate,
   async (req, res) => {
     try {
-      const { hospitalCode, priority, reason } = req.body;
-      const createdBy = req.user?.id || null; // Si authentification active
-      
+      const { hospitalCode, priority, reason, notificationMode = 'sms' } = req.body;
+      const createdBy = req.user?.id || null;
+
       const patient = await Patient.create({
         hospitalCode,
         priority,
         reason,
-        createdBy
+        createdBy,
+        notificationMode
       });
       
       // Générer l'URL pour le QR code
@@ -396,6 +398,57 @@ router.post('/:token/alert',
         success: false, 
         error: 'Erreur lors de l\'envoi de l\'alerte' 
       });
+    }
+  }
+);
+
+/**
+ * POST /api/patients/:id/confirm
+ * Confirmation patient après SMS "Partez maintenant" (Feature 4)
+ */
+router.post('/:id/confirm',
+  [param('id').isInt()],
+  validate,
+  async (req, res) => {
+    try {
+      const { rows } = await require('../../config/database').query(`
+        UPDATE patients SET
+          status = 'returned',
+          returned_at = CURRENT_TIMESTAMP,
+          expires_at = CURRENT_TIMESTAMP + INTERVAL '2 hours'
+        WHERE id = $1 AND status = 'notified'
+        RETURNING *
+      `, [req.params.id]);
+
+      if (rows.length === 0) {
+        return res.status(404).json({ success: false, error: 'Patient non trouvé ou statut invalide' });
+      }
+
+      res.json({ success: true, data: { id: rows[0].id, status: rows[0].status } });
+    } catch (error) {
+      logger.error('Erreur confirmation patient', error);
+      res.status(500).json({ success: false, error: 'Erreur lors de la confirmation' });
+    }
+  }
+);
+
+/**
+ * POST /api/patients/:id/call-notified
+ * Marque un appel téléphonique comme effectué (Feature 6)
+ */
+router.post('/:id/call-notified',
+  [
+    param('id').isInt(),
+    require('express-validator').body('slot').isIn([60, 30])
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const patient = await Patient.markCallNotified(req.params.id, req.body.slot);
+      res.json({ success: true, data: { id: patient.id } });
+    } catch (error) {
+      logger.error('Erreur call-notified', error);
+      res.status(500).json({ success: false, error: 'Erreur lors du marquage' });
     }
   }
 );
