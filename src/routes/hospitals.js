@@ -630,4 +630,38 @@ router.put('/:code/civieres/:id',
   }
 );
 
+/**
+ * GET /api/hospitals/:code/hourly
+ * Répartition horaire des patients enregistrés aujourd'hui (pour graphe analytique)
+ */
+router.get('/:code/hourly',
+  [param('code').isIn(Object.keys(config.hospitals))],
+  validate,
+  async (req, res) => {
+    try {
+      const { code } = req.params;
+      const { rows } = await db.query(`
+        SELECT EXTRACT(HOUR FROM p.created_at AT TIME ZONE 'America/Toronto') AS hour,
+               COUNT(*) AS count
+        FROM patients p
+        JOIN hospitals h ON p.hospital_id = h.id
+        WHERE h.code = $1 AND p.created_at >= CURRENT_DATE
+        GROUP BY 1
+        ORDER BY 1
+      `, [code]);
+
+      // Build full 24-hour array (0–23), filling zeros for missing hours
+      const hourly = Array.from({ length: 24 }, (_, h) => {
+        const row = rows.find(r => parseInt(r.hour) === h);
+        return { hour: h, count: row ? parseInt(row.count) : 0 };
+      });
+
+      res.json({ success: true, data: hourly });
+    } catch (error) {
+      logger.error('Erreur stats horaires', error);
+      res.status(500).json({ success: false, error: 'Erreur stats horaires' });
+    }
+  }
+);
+
 module.exports = router;

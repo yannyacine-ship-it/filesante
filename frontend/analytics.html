@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FileSanté — Analytique</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue-50: #EDF5FF; --blue-100: #C8DFFF;
+      --blue-400: #3E8EF7; --blue-600: #1965D4; --blue-800: #0D3B8A;
+      --teal-50: #E0F8F4; --teal-400: #1DB89A; --teal-600: #0F7A68;
+      --amber-50: #FFF8E6; --amber-400: #F59E0B; --amber-600: #B45309;
+      --green-50: #EDFAF4; --green-400: #22C55E; --green-600: #166534;
+      --red-50: #FEF2F2; --red-400: #F87171; --red-600: #DC2626;
+      --purple-50: #F5F3FF; --purple-600: #7C3AED;
+      --gray-50: #F8F7F5; --gray-100: #EDEDEA; --gray-200: #DDDCDA;
+      --gray-300: #C8C7C2; --gray-400: #9B9A94; --gray-600: #5C5C58;
+      --gray-700: #3D3D3A; --gray-900: #1A1A18;
+      --white: #FFFFFF;
+    }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--gray-50); color: var(--gray-700);
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── LAYOUT ── */
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 220px; background: var(--gray-900); flex-shrink: 0;
+      display: flex; flex-direction: column; padding: 24px 0;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.07);
+      margin-bottom: 16px;
+    }
+    .sidebar-logo-text { font-size: 16px; font-weight: 600; color: white; letter-spacing: -0.3px; }
+    .sidebar-logo-text span { color: var(--blue-400); }
+    .sidebar-section { padding: 0 12px; margin-bottom: 4px; }
+    .sidebar-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 1.2px;
+      text-transform: uppercase; color: rgba(255,255,255,0.25);
+      padding: 0 8px; margin-bottom: 6px; margin-top: 12px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 9px; cursor: pointer;
+      font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.5);
+      transition: all 0.15s; text-decoration: none; margin-bottom: 2px;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
+    .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+    .nav-item svg { flex-shrink: 0; }
+    .sidebar-footer {
+      margin-top: auto; padding: 16px 20px 0;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+    .nurse-name { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.7); }
+    .nurse-role { font-size: 11px; color: rgba(255,255,255,0.35); }
+
+    /* ── MAIN ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar {
+      background: var(--white); border-bottom: 1px solid var(--gray-100);
+      padding: 14px 24px; display: flex; align-items: center;
+      justify-content: space-between; flex-shrink: 0; gap: 12px;
+    }
+    .topbar-left h1 { font-size: 17px; font-weight: 600; color: var(--gray-900); }
+    .topbar-left p { font-size: 12px; color: var(--gray-400); margin-top: 1px; }
+    .topbar-actions { display: flex; gap: 8px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 14px; border-radius: 9px; font-family: 'DM Sans', sans-serif;
+      font-size: 13px; font-weight: 500; cursor: pointer; border: none;
+      transition: all 0.15s; text-decoration: none; min-height: 36px;
+    }
+    .btn-ghost { background: var(--gray-50); color: var(--gray-700); border: 1px solid var(--gray-100); }
+    .btn-ghost:hover { background: var(--gray-100); }
+
+    .content { padding: 24px 28px; flex: 1; overflow-y: auto; }
+
+    /* ── KPI STRIP ── */
+    .kpi-strip {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 14px; margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: var(--white); border-radius: 14px;
+      border: 1px solid var(--gray-100); padding: 20px;
+    }
+    .kpi-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.6px;
+      text-transform: uppercase; color: var(--gray-400); margin-bottom: 10px;
+    }
+    .kpi-value {
+      font-size: 32px; font-weight: 600; color: var(--gray-900);
+      letter-spacing: -1px; line-height: 1; margin-bottom: 4px;
+    }
+    .kpi-sub { font-size: 12px; color: var(--gray-400); }
+    .kpi-card.green .kpi-value  { color: var(--green-600); }
+    .kpi-card.amber .kpi-value  { color: var(--amber-600); }
+    .kpi-card.red   .kpi-value  { color: var(--red-600); }
+    .kpi-card.blue  .kpi-value  { color: var(--blue-600); }
+
+    /* ── CHARTS GRID ── */
+    .charts-grid {
+      display: grid; grid-template-columns: 2fr 1fr;
+      gap: 16px; margin-bottom: 28px;
+    }
+    .chart-card {
+      background: var(--white); border-radius: 14px;
+      border: 1px solid var(--gray-100); padding: 22px;
+    }
+    .chart-title {
+      font-size: 13px; font-weight: 600; color: var(--gray-900); margin-bottom: 4px;
+    }
+    .chart-sub {
+      font-size: 11px; color: var(--gray-400); margin-bottom: 18px;
+    }
+    .chart-wrap { position: relative; height: 240px; }
+
+    /* ── HISTORY TABLE ── */
+    .history-card {
+      background: var(--white); border-radius: 14px;
+      border: 1px solid var(--gray-100); padding: 22px;
+    }
+    .history-title { font-size: 13px; font-weight: 600; color: var(--gray-900); margin-bottom: 4px; }
+    .history-sub   { font-size: 11px; color: var(--gray-400); margin-bottom: 18px; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--gray-400);
+      padding: 8px 12px; text-align: left;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    tbody tr { border-bottom: 1px solid var(--gray-100); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--gray-50); }
+    tbody td { padding: 10px 12px; font-size: 13px; color: var(--gray-700); }
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    }
+    .badge-green { background: var(--green-50); color: var(--green-600); }
+    .badge-amber { background: var(--amber-50); color: var(--amber-600); }
+    .badge-red   { background: var(--red-50);   color: var(--red-600); }
+
+    /* ── LOADING ── */
+    .loading-bar {
+      height: 3px; background: linear-gradient(90deg, var(--blue-400), var(--teal-400));
+      border-radius: 2px; animation: loadpulse 1.2s ease-in-out infinite;
+    }
+    @keyframes loadpulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+    .skeleton {
+      background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-50) 50%, var(--gray-100) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px; display: inline-block;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ── STATUS BAR ── */
+    .status-bar {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; color: var(--gray-400);
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green-400);
+    }
+    .status-dot.offline { background: var(--red-400); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .content { padding: 16px; }
+    }
+    @media (max-width: 768px) {
+      .kpi-strip { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .topbar { padding: 12px 16px; }
+    }
+    @media (max-width: 480px) {
+      .kpi-strip { grid-template-columns: 1fr; }
+      .kpi-value { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
+        <rect width="38" height="38" rx="8" fill="#1965D4"/>
+        <rect x="16" y="8" width="6" height="22" rx="3" fill="white"/>
+        <rect x="8" y="16" width="22" height="6" rx="3" fill="white"/>
+      </svg>
+      <span class="sidebar-logo-text">File<span>Santé</span></span>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Principal</div>
+      <a class="nav-item" href="dashboard.html">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        File d'attente
+      </a>
+      <a class="nav-item active" href="analytics.html">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Analytique
+      </a>
+      <a class="nav-item" href="/admin.html">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+        Vue Admin
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Hôpital</div>
+      <a class="nav-item">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16"/><path d="M1 21h22"/><path d="M9 21V9h6v12"/></svg>
+        <span id="sidebarHospital">—</span>
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div>
+        <div class="nurse-name" id="sidebarNurseName">Infirmière</div>
+        <div class="nurse-role">Triage P4/P5</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>Analytique — <span id="topbarHospital">Hôpital</span></h1>
+        <p>Statistiques du jour · <span id="topbarDate"></span></p>
+      </div>
+      <div class="topbar-actions">
+        <div class="status-bar">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusLabel">Chargement…</span>
+        </div>
+        <a class="btn btn-ghost" href="dashboard.html">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Retour
+        </a>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- KPI STRIP -->
+      <div class="kpi-strip">
+        <div class="kpi-card blue">
+          <div class="kpi-label">Patients traités</div>
+          <div class="kpi-value" id="kpiTreated">—</div>
+          <div class="kpi-sub">retournés aujourd'hui</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Temps moyen d'attente</div>
+          <div class="kpi-value" id="kpiAvgWait">—</div>
+          <div class="kpi-sub">minutes · patients retournés</div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-label">Taux de no-show</div>
+          <div class="kpi-value" id="kpiNoshowRate">—</div>
+          <div class="kpi-sub">des patients notifiés</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total enregistrés</div>
+          <div class="kpi-value" id="kpiTotal">—</div>
+          <div class="kpi-sub">depuis minuit</div>
+        </div>
+      </div>
+
+      <!-- CHARTS -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">Affluence horaire</div>
+          <div class="chart-sub">Nombre de patients enregistrés par heure aujourd'hui</div>
+          <div class="chart-wrap">
+            <canvas id="chartHourly"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Répartition des statuts</div>
+          <div class="chart-sub">Distribution finale · aujourd'hui</div>
+          <div class="chart-wrap">
+            <canvas id="chartStatus"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORY TABLE -->
+      <div class="history-card">
+        <div class="history-title">Historique 7 derniers jours</div>
+        <div class="history-sub">Données journalières — patients, retours, no-shows, attente moyenne</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Enregistrés</th>
+              <th>Retournés</th>
+              <th>No-show</th>
+              <th>Taux retour</th>
+              <th>Taux no-show</th>
+              <th>Attente moy.</th>
+              <th>Heure de pointe</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--gray-400)">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+  // ── CONFIG ──
+  const hospitalCode = (new URLSearchParams(location.search).get('hospital'))
+    || localStorage.getItem('hospitalCode')
+    || 'HMR';
+
+  // ── INIT UI ──
+  document.getElementById('topbarDate').textContent =
+    new Date().toLocaleDateString('fr-CA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  (function initNames() {
+    const first = localStorage.getItem('nurseFirstName') || '';
+    const last  = localStorage.getItem('nurseLastName')  || '';
+    const full  = [first, last].filter(Boolean).join(' ') || 'Infirmière';
+    document.getElementById('sidebarNurseName').textContent = full;
+  })();
+
+  // ── CHART INSTANCES ──
+  let chartHourly = null;
+  let chartStatus = null;
+
+  function initCharts() {
+    // Hourly bar chart
+    chartHourly = new Chart(document.getElementById('chartHourly').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: Array.from({ length: 24 }, (_, h) => h + 'h'),
+        datasets: [{
+          label: 'Patients',
+          data: Array(24).fill(0),
+          backgroundColor: 'rgba(25,101,212,0.18)',
+          borderColor: '#1965D4',
+          borderWidth: 1.5,
+          borderRadius: 5,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: {
+          label: ctx => ' ' + ctx.parsed.y + ' patient' + (ctx.parsed.y > 1 ? 's' : '')
+        }}},
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#9B9A94' } },
+          y: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 }, color: '#9B9A94' },
+               grid: { color: 'rgba(0,0,0,0.04)' } }
+        }
+      }
+    });
+
+    // Status donut chart
+    chartStatus = new Chart(document.getElementById('chartStatus').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Retournés', 'No-show', 'En cours'],
+        datasets: [{
+          data: [0, 0, 0],
+          backgroundColor: ['#22C55E', '#F87171', '#3E8EF7'],
+          borderColor: '#fff',
+          borderWidth: 3,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { font: { size: 12 }, padding: 14, boxWidth: 12, boxHeight: 12 }
+          },
+          tooltip: { callbacks: {
+            label: ctx => ' ' + ctx.label + ': ' + ctx.parsed
+          }}
+        }
+      }
+    });
+  }
+
+  // ── STATUS DOT ──
+  function setStatus(ok) {
+    document.getElementById('statusDot').className = 'status-dot' + (ok ? '' : ' offline');
+    document.getElementById('statusLabel').textContent = ok
+      ? 'Données en direct · ' + new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })
+      : 'Hors ligne';
+  }
+
+  // ── LOAD DATA ──
+  async function loadAll() {
+    try {
+      const [statsRes, hourlyRes, histRes] = await Promise.all([
+        fetch('/api/hospitals/' + hospitalCode + '/stats'),
+        fetch('/api/hospitals/' + hospitalCode + '/hourly'),
+        fetch('/api/hospitals/' + hospitalCode + '/history?days=7')
+      ]);
+
+      const [statsJson, hourlyJson, histJson] = await Promise.all([
+        statsRes.json(), hourlyRes.json(), histRes.json()
+      ]);
+
+      if (statsJson.success) updateKpis(statsJson.data);
+      if (hourlyJson.success) updateHourlyChart(hourlyJson.data);
+      if (histJson.success) {
+        updateStatusChart(statsJson.data);
+        renderHistory(histJson.data);
+      }
+
+      // Hospital name
+      const hospRes = await fetch('/api/hospitals/' + hospitalCode);
+      const hospJson = await hospRes.json();
+      if (hospJson.success) {
+        const name = hospJson.data?.name || hospitalCode;
+        document.getElementById('topbarHospital').textContent = name;
+        document.getElementById('sidebarHospital').textContent = hospitalCode;
+        document.title = 'Analytique — ' + name;
+      }
+
+      setStatus(true);
+    } catch (e) {
+      console.error(e);
+      setStatus(false);
+    }
+  }
+
+  function updateKpis(data) {
+    const d = data.daily || {};
+    document.getElementById('kpiTreated').textContent   = d.returned   ?? '0';
+    document.getElementById('kpiTotal').textContent     = d.registered  ?? '0';
+    document.getElementById('kpiAvgWait').textContent   = d.avgWaitTime != null ? d.avgWaitTime + ' min' : 'N/A';
+    document.getElementById('kpiNoshowRate').textContent = d.noshowRate != null ? d.noshowRate + '%' : 'N/A';
+
+    // Color no-show rate
+    const nsr = d.noshowRate;
+    const noShowCard = document.getElementById('kpiNoshowRate').closest('.kpi-card');
+    noShowCard.className = 'kpi-card ' + (nsr == null ? '' : nsr > 20 ? 'red' : nsr > 10 ? 'amber' : 'green');
+  }
+
+  function updateHourlyChart(data) {
+    if (!chartHourly) return;
+    const counts = data.map(d => d.count);
+    const max = Math.max(...counts);
+    chartHourly.data.datasets[0].data = counts;
+    // Highlight peak hour in darker blue
+    chartHourly.data.datasets[0].backgroundColor = counts.map(c =>
+      c === max && max > 0 ? 'rgba(25,101,212,0.55)' : 'rgba(25,101,212,0.18)'
+    );
+    chartHourly.update();
+  }
+
+  function updateStatusChart(data) {
+    if (!chartStatus) return;
+    const d = data.daily || {};
+    const returned  = d.returned  || 0;
+    const noshow    = d.noshow    || 0;
+    const active    = (data.realtime?.totalActive) || 0;
+    chartStatus.data.datasets[0].data = [returned, noshow, active];
+    chartStatus.update();
+  }
+
+  function renderHistory(rows) {
+    const tbody = document.getElementById('historyBody');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune donnée disponible</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => {
+      const date = new Date(r.date).toLocaleDateString('fr-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+      const returnRate = r.total_activated > 0
+        ? Math.round(r.total_returned / r.total_activated * 100) : null;
+      const noshowRate = r.total_notified > 0
+        ? Math.round(r.total_noshow / r.total_notified * 100) : null;
+      const avgWait = r.avg_wait_time_minutes ? Math.round(r.avg_wait_time_minutes) + ' min' : '—';
+      const peakHour = r.peak_hour != null ? r.peak_hour + 'h00' : '—';
+
+      const rrBadge = returnRate != null
+        ? `<span class="badge badge-${returnRate >= 70 ? 'green' : returnRate >= 40 ? 'amber' : 'red'}">${returnRate}%</span>`
+        : '<span style="color:var(--gray-400)">—</span>';
+      const nsBadge = noshowRate != null
+        ? `<span class="badge badge-${noshowRate <= 10 ? 'green' : noshowRate <= 20 ? 'amber' : 'red'}">${noshowRate}%</span>`
+        : '<span style="color:var(--gray-400)">—</span>';
+
+      return `<tr>
+        <td>${date}</td>
+        <td>${r.total_registered || 0}</td>
+        <td>${r.total_returned   || 0}</td>
+        <td>${r.total_noshow     || 0}</td>
+        <td>${rrBadge}</td>
+        <td>${nsBadge}</td>
+        <td>${avgWait}</td>
+        <td>${peakHour}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── BOOT ──
+  initCharts();
+  loadAll();
+  setInterval(loadAll, 60000); // refresh every minute
+</script>
+</body>
+</html>
