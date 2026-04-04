@@ -114,6 +114,7 @@ app.get('/api/hospitals-list', (req, res) => {
 app.get('/api/hospitals/:code/report', async (req, res) => {
   const { code } = req.params;
   const nurseName = req.query.nurse ? decodeURIComponent(req.query.nurse) : null;
+  const prevNurseName = req.query.prevNurse ? decodeURIComponent(req.query.prevNurse) : null;
 
   try {
     const PDFDocument = require('pdfkit');
@@ -191,11 +192,17 @@ app.get('/api/hospitals/:code/report', async (req, res) => {
       .text(`Date: ${shiftDate}`, 50, 132)
       .text(`Généré à: ${shiftTime}`, 50, 149);
 
+    let y0 = 166;
     if (nurseName) {
-      doc.text(`Infirmière: ${nurseName}`, 50, 166);
+      doc.text(`Infirmière (quart actuel): ${nurseName}`, 50, y0);
+      y0 += 17;
+    }
+    if (prevNurseName) {
+      doc.fillColor('#888').text(`Infirmière (quart précédent): ${prevNurseName}`, 50, y0).fillColor('#333');
+      y0 += 17;
     }
 
-    const sectionTop = nurseName ? 200 : 185;
+    const sectionTop = y0 + 10;
 
     // Stats de file
     doc.fontSize(14).font('Helvetica-Bold').fillColor('#1965D4').text('Statistiques — File virtuelle', 50, sectionTop);

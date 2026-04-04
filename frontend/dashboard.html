@@ -104,6 +104,14 @@
     .btn-rapport:hover { background: var(--gray-100); }
     .btn-nurse { background: var(--purple-50); color: var(--purple-600); border: 1.5px solid #DDD6FE; }
     .btn-nurse:hover { background: #EDE9FE; }
+    .btn-quart-inline {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 500; padding: 4px 10px; min-height: 28px;
+      background: var(--purple-50); color: var(--purple-600);
+      border: 1.5px solid #DDD6FE; border-radius: 8px; cursor: pointer;
+      white-space: nowrap; margin-left: 8px; vertical-align: middle;
+    }
+    .btn-quart-inline:hover { background: #EDE9FE; }
 
     .content { padding: 24px 28px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
@@ -674,13 +682,16 @@
       <div class="topbar-left">
         <h1 id="topbarTitle">Hôpital Maisonneuve-Rosemont</h1>
         <p>Urgences P4/P5 — <span id="topbarDate"></span></p>
-        <span class="topbar-nurse" onclick="openModal('nurse')" title="Changer d'infirmière">
+        <span class="topbar-nurse" onclick="openModal('nurse')" title="Modifier le nom">
           👩‍⚕️ <span id="topbarNurseName">Marie-Laure T.</span>
         </span>
+        <button class="btn-quart-inline" onclick="openModal('nurse')" title="Changer de quart">
+          🔄 Changer de quart
+        </button>
       </div>
       <div class="topbar-actions">
         <button class="btn btn-nurse" onclick="openModal('nurse')">
-          👩‍⚕️ Changer d'infirmière
+          👩‍⚕️ Changer de quart
         </button>
         <button class="btn btn-rapport" onclick="downloadReport()">
           📋 Rapport de quart
@@ -946,8 +957,8 @@
     <div class="modal-icon" style="background:var(--purple-50);">
       <span style="font-size:24px;">👩‍⚕️</span>
     </div>
-    <div class="modal-title">Changer d'infirmière</div>
-    <div class="modal-sub">Mettez à jour le nom de l'infirmière en charge. Ce nom apparaîtra dans les rapports de quart.</div>
+    <div class="modal-title">Changement de quart</div>
+    <div class="modal-sub">Entrez le nom de la nouvelle infirmière. L'ancien nom sera conservé dans le rapport de quart.</div>
     <div class="form-group">
       <label class="form-label">Prénom</label>
       <input class="form-input" type="text" id="nurseFirstName" placeholder="Ex: Marie-Laure" autocomplete="off">
@@ -1054,11 +1065,21 @@
     const first = document.getElementById('nurseFirstName').value.trim();
     const last  = document.getElementById('nurseLastName').value.trim();
     if (!first && !last) { showToast('Veuillez entrer un nom', 'amber'); return; }
+    // Preserve previous nurse name for shift report
+    const prevFirst = localStorage.getItem('nurseFirstName') || '';
+    const prevLast  = localStorage.getItem('nurseLastName')  || '';
+    const prevFull  = [prevFirst, prevLast].filter(Boolean).join(' ');
+    const newFull   = [first, last].filter(Boolean).join(' ');
+    if (prevFull && prevFull !== newFull) {
+      localStorage.setItem('prevNurseFirstName', prevFirst);
+      localStorage.setItem('prevNurseLastName',  prevLast);
+      localStorage.setItem('prevNurseChangedAt', new Date().toISOString());
+    }
     localStorage.setItem('nurseFirstName', first);
     localStorage.setItem('nurseLastName',  last);
     loadNurse();
     closeModal('nurse');
-    showToast('Infirmière mise à jour : ' + [first, last].filter(Boolean).join(' '), 'green');
+    showToast('Quart transféré à : ' + newFull, 'green');
   }
 
   // ── DEMO QUEUE DATA ──
@@ -1420,13 +1441,19 @@
     } catch (_) {}
   }
 
-  // ── PDF RAPPORT (Feature 3: include nurse name) ──
+  // ── PDF RAPPORT (Feature 3: include nurse name + previous nurse on shift change) ──
   function downloadReport() {
     const first = localStorage.getItem('nurseFirstName') || '';
     const last  = localStorage.getItem('nurseLastName')  || '';
     const nurseName = [first, last].filter(Boolean).join(' ');
+    const prevFirst = localStorage.getItem('prevNurseFirstName') || '';
+    const prevLast  = localStorage.getItem('prevNurseLastName')  || '';
+    const prevNurse = [prevFirst, prevLast].filter(Boolean).join(' ');
+    const params = [];
+    if (nurseName) params.push('nurse=' + encodeURIComponent(nurseName));
+    if (prevNurse) params.push('prevNurse=' + encodeURIComponent(prevNurse));
     const url = '/api/hospitals/' + hospitalCode + '/report'
-      + (nurseName ? '?nurse=' + encodeURIComponent(nurseName) : '');
+      + (params.length ? '?' + params.join('&') : '');
     window.open(url, '_blank');
     showToast('📋 Génération du rapport...', 'green');
   }
