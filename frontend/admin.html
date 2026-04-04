@@ -61,7 +61,7 @@
 
     /* GLOBAL STATS STRIP */
     .global-strip {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px;
     }
     .stat-card {
       background: var(--white); border-radius: 14px; border: 1px solid var(--gray-100); padding: 18px;
@@ -72,6 +72,7 @@
       display: inline-block; font-size: 10px; font-weight: 600;
       padding: 2px 7px; border-radius: 100px; margin-top: 6px;
     }
+    .stat-trend { display: block; margin-top: 5px; min-height: 16px; }
     .badge-blue  { background: var(--blue-50);  color: var(--blue-600); }
     .badge-green { background: var(--green-50); color: var(--green-600); }
     .badge-amber { background: var(--amber-50); color: var(--amber-600); }
@@ -170,31 +171,36 @@
     <div class="content">
 
       <!-- GLOBAL STRIP -->
-      <div class="global-strip" style="grid-template-columns:repeat(5,1fr);">
+      <div class="global-strip">
         <div class="stat-card">
           <div class="stat-value" id="gTotal">—</div>
           <div class="stat-label">Patients en file (tous hôpitaux)</div>
           <div class="stat-badge badge-blue">Temps réel</div>
+          <span class="stat-trend" id="gTotalTrend"></span>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="gReturned">—</div>
           <div class="stat-label">Retournés aujourd'hui</div>
           <div class="stat-badge badge-green">Ce quart</div>
+          <span class="stat-trend" id="gReturnedTrend"></span>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="gLwbs">—</div>
           <div class="stat-label">LWBS (No-show + Non confirmés)</div>
           <div class="stat-badge badge-red">Aujourd'hui</div>
+          <span class="stat-trend" id="gLwbsTrend"></span>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="gAvgWait">—</div>
           <div class="stat-label">Temps d'attente moyen global</div>
-          <div class="stat-badge badge-amber">min</div>
+          <div class="stat-badge badge-amber">Actif</div>
+          <span class="stat-trend" id="gAvgWaitTrend"></span>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="gCivieres">—</div>
           <div class="stat-label">Civières occupées (tous hôpitaux)</div>
           <div class="stat-badge" id="gCivieresBadge" style="background:var(--teal-50);color:var(--teal-600);">Taux occupation</div>
+          <span class="stat-trend" id="gCivieresTrend"></span>
         </div>
       </div>
 
@@ -218,69 +224,106 @@
 <script>
   let hourlyChart = null;
 
-  // Demo / fallback data when backend is unavailable
-  const DEMO_HOSPITALS = [
-    { code: 'HMR', name: 'Hôpital Maisonneuve-Rosemont', isActive: true, queueCount: 12, notifiedCount: 3, lwbs: 2, returnedToday: 8, avgWaitMinutes: 127, activeCivieres: 3, civieresToday: 5, avgCiviereOccupationMin: 142, avgResultsLiberationMin: 38 },
-    { code: 'HND', name: 'Hôpital Notre-Dame',           isActive: true, queueCount: 7,  notifiedCount: 1, lwbs: 1, returnedToday: 5, avgWaitMinutes: 95,  activeCivieres: 1, civieresToday: 2, avgCiviereOccupationMin: 95,  avgResultsLiberationMin: 22 },
-    { code: 'HSC', name: 'Hôpital du Sacré-Cœur',        isActive: true, queueCount: 15, notifiedCount: 4, lwbs: 3, returnedToday: 11, avgWaitMinutes: 145, activeCivieres: 5, civieresToday: 8, avgCiviereOccupationMin: 168, avgResultsLiberationMin: 45 },
-    { code: 'HGM', name: 'Hôpital Général de Montréal',  isActive: true, queueCount: 9,  notifiedCount: 2, lwbs: 0, returnedToday: 6, avgWaitMinutes: 110,  activeCivieres: 2, civieresToday: 3, avgCiviereOccupationMin: 120, avgResultsLiberationMin: 30 }
-  ];
-
-  const DEMO_HOURLY = Array.from({ length: 12 }, (_, i) => ({
-    hour: new Date(Date.now() - (11 - i) * 3600000),
-    count: Math.floor(Math.random() * 8) + 1
-  }));
+  // Previous KPI snapshot for trend comparison (client-side tracking)
+  let prevSnapshot = null;
 
   async function loadStats() {
     document.getElementById('lastUpdated').textContent = 'Chargement...';
 
-    let hospitals = DEMO_HOSPITALS;
-    let hourly = DEMO_HOURLY;
+    let hospitals    = null;
+    let hourly       = [];
+    let trends       = null;
+    let globalAvgWait = null;
+    let apiOk        = false;
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 4000); // give up after 4s
+      const timeout = setTimeout(() => controller.abort(), 6000);
       const resp = await fetch('/api/hospitals/all/admin-stats', { signal: controller.signal });
       clearTimeout(timeout);
+
       if (resp.ok) {
-        const { data } = await resp.json();
-        if (data?.hospitals?.length) {
-          hospitals = data.hospitals;
-          hourly = (data.hourlyPatients || []).map(r => ({ hour: new Date(r.hour), count: r.count }));
+        const body = await resp.json();
+        if (body.data) {
+          hospitals     = body.data.hospitals    || [];   // may be empty array — that's valid
+          hourly        = (body.data.hourlyPatients || []).map(r => ({ hour: new Date(r.hour), count: r.count }));
+          trends        = body.data.trends       || null;
+          globalAvgWait = body.data.globalAvgWait ?? null;
+          apiOk = true;
         }
       }
-    } catch (_) { /* fall through to demo data */ }
+    } catch (_) { /* network/timeout — will fall through to error state */ }
 
-    renderGlobal(hospitals);
-    renderHospitals(hospitals);
-    renderChart(hourly);
-
-    document.getElementById('lastUpdated').textContent =
-      'Mis à jour à ' + new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+    if (apiOk && hospitals !== null) {
+      renderGlobal(hospitals, trends, globalAvgWait);
+      renderHospitals(hospitals);
+      renderChart(hourly);
+      document.getElementById('lastUpdated').textContent =
+        'Mis à jour à ' + new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+    } else {
+      // API unreachable — show error indicator, keep last rendered values
+      document.getElementById('lastUpdated').textContent =
+        '⚠️ Hors ligne · dernière mise à jour: ' +
+        new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+    }
   }
 
-  function renderGlobal(hospitals) {
-    const total      = hospitals.reduce((s, h) => s + h.queueCount, 0);
-    const returned   = hospitals.reduce((s, h) => s + h.returnedToday, 0);
-    const lwbs       = hospitals.reduce((s, h) => s + h.lwbs, 0);
-    const activeCivieres = hospitals.reduce((s, h) => s + (h.activeCivieres || 0), 0);
-    const activeWithCivieres = hospitals.filter(h => (h.activeCivieres || 0) > 0).length;
+  // trend: +1 = improving (green ↑), -1 = degrading (red ↓), 0 = stable
+  function trendBadge(dir, improvingLabel, degradingLabel) {
+    if (dir === 1)  return `<span style="color:#166534;font-size:11px;font-weight:600;">↑ ${improvingLabel}</span>`;
+    if (dir === -1) return `<span style="color:#DC2626;font-size:11px;font-weight:600;">↓ ${degradingLabel}</span>`;
+    return `<span style="color:#9B9A94;font-size:11px;">→ Stable</span>`;
+  }
 
-    // Weighted avg wait (only for hospitals with active patients)
-    const hospitalsWithQueue = hospitals.filter(h => h.queueCount > 0 && h.avgWaitMinutes > 0);
-    const avgWait = hospitalsWithQueue.length
-      ? Math.round(hospitalsWithQueue.reduce((s, h) => s + h.avgWaitMinutes, 0) / hospitalsWithQueue.length)
-      : 0;
+  // Client-side trend: compare current value to previous snapshot
+  function clientTrend(key, current, higherIsBetter) {
+    if (!prevSnapshot) return 0;
+    const prev = prevSnapshot[key] ?? current;
+    if (current === prev) return 0;
+    return (current > prev) === higherIsBetter ? 1 : -1;
+  }
 
-    document.getElementById('gTotal').textContent    = total;
-    document.getElementById('gReturned').textContent = returned;
-    document.getElementById('gLwbs').textContent     = lwbs;
-    document.getElementById('gAvgWait').textContent  = avgWait > 0 ? avgWait + ' min' : '—';
+  function renderGlobal(hospitals, serverTrends, globalAvgWait) {
+    const total          = hospitals.reduce((s, h) => s + (h.queueCount      || 0), 0);
+    const returned       = hospitals.reduce((s, h) => s + (h.returnedToday   || 0), 0);
+    const lwbs           = hospitals.reduce((s, h) => s + (h.lwbs            || 0), 0);
+    const activeCivieres = hospitals.reduce((s, h) => s + (h.activeCivieres  || 0), 0);
+
+    // Use globalAvgWait from backend (direct AVG over all waiting patients) or fallback
+    let avgWait = globalAvgWait ?? 0;
+    if (!avgWait && hospitals.length) {
+      const withQueue = hospitals.filter(h => h.queueCount > 0 && h.avgWaitMinutes > 0);
+      avgWait = withQueue.length
+        ? Math.round(withQueue.reduce((s, h) => s + h.avgWaitMinutes, 0) / withQueue.length)
+        : 0;
+    }
+
+    // Determine client-side trends (prev snapshot vs now)
+    const tTotal    = (serverTrends?.queue    ?? 0) || clientTrend('total',    total,    false);
+    const tReturned = (serverTrends?.returned ?? 0) || clientTrend('returned', returned, true);
+    const tLwbs     = (serverTrends?.lwbs     ?? 0) || clientTrend('lwbs',     lwbs,     false);
+    const tAvgWait  = clientTrend('avgWait', avgWait, false); // lower = better
+
+    // Update KPI cards — always show numeric value (never dash for valid data)
+    setKpi('gTotal',    String(total),
+      trendBadge(tTotal,    'En hausse', 'En hausse'));
+
+    setKpi('gReturned', String(returned),
+      trendBadge(tReturned, 'En progression', 'En baisse'));
+
+    setKpi('gLwbs',     String(lwbs),
+      trendBadge(tLwbs,     'En baisse', 'En hausse'));
+
+    setKpi('gAvgWait',  avgWait > 0 ? avgWait + ' min' : '0 min',
+      trendBadge(tAvgWait,  'En baisse', 'En hausse'));
 
     // Civière KPI
-    const maxCivieres = hospitals.length * 20; // 20 civières per hospital
+    const maxCivieres = hospitals.length * 20;
     const occupancyPct = maxCivieres > 0 ? Math.round(activeCivieres / maxCivieres * 100) : 0;
-    document.getElementById('gCivieres').textContent = activeCivieres;
+    const tCivieres = clientTrend('civieres', activeCivieres, false);
+    setKpi('gCivieres', String(activeCivieres),
+      trendBadge(tCivieres, 'En baisse', 'En hausse'));
+
     const badge = document.getElementById('gCivieresBadge');
     badge.textContent = occupancyPct + '% occupation';
     if (occupancyPct >= 50) {
@@ -290,14 +333,30 @@
     } else {
       badge.style.background = '#E0F8F4'; badge.style.color = '#0F7A68';
     }
+
+    // Save snapshot for next cycle
+    prevSnapshot = { total, returned, lwbs, avgWait, civieres: activeCivieres };
+  }
+
+  // Helper: update a KPI card value + trend sub-line
+  function setKpi(valueId, value, trendHtml) {
+    const el = document.getElementById(valueId);
+    if (el) el.textContent = value;
+    const trendEl = document.getElementById(valueId + 'Trend');
+    if (trendEl) trendEl.innerHTML = trendHtml;
   }
 
   function renderHospitals(hospitals) {
     const grid = document.getElementById('hospitalsGrid');
+    if (!hospitals.length) {
+      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#9B9A94;padding:40px 0;font-size:13px;">Aucun hôpital trouvé — exécutez les migrations et le seed.</p>';
+      return;
+    }
     grid.innerHTML = hospitals.map(h => {
-      const waitPct = Math.min(100, Math.round(h.avgWaitMinutes / 240 * 100));
+      const waitPct   = Math.min(100, Math.round((h.avgWaitMinutes || 0) / 240 * 100));
       const cardClass = h.lwbs >= 3 ? 'alert-card' : h.queueCount >= 12 ? 'warn-card' : 'ok-card';
-      const barColor = h.lwbs >= 3 ? '#F87171' : h.queueCount >= 12 ? '#F59E0B' : '#22C55E';
+      const barColor  = h.lwbs >= 3 ? '#F87171'    : h.queueCount >= 12 ? '#F59E0B'   : '#22C55E';
+      const waitLabel = h.avgWaitMinutes > 0 ? h.avgWaitMinutes + ' min' : '0 min';
 
       return `
         <div class="hospital-card ${cardClass}">
@@ -317,7 +376,7 @@
             </div>
           </div>
           <div style="margin-top:12px;font-size:12px;color:var(--gray-400);">
-            Attente moy. <strong style="color:var(--gray-700);">${h.avgWaitMinutes > 0 ? h.avgWaitMinutes + ' min' : '—'}</strong>
+            Attente moy. <strong style="color:var(--gray-700);">${waitLabel}</strong>
             · ${h.notifiedCount} en route
             ${(h.activeCivieres||0) > 0 ? `· <strong style="color:var(--teal-600);">🛏 ${h.activeCivieres} civière${h.activeCivieres>1?'s':''}</strong>` : ''}
           </div>
@@ -339,7 +398,6 @@
         '<p style="text-align:center;color:#9B9A94;padding:60px 0;font-size:13px;">Graphique indisponible (CDN hors ligne)</p>';
       return;
     }
-
     const labels = hourly.map(r => {
       const d = r.hour instanceof Date ? r.hour : new Date(r.hour);
       return d.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
@@ -347,7 +405,6 @@
     const data = hourly.map(r => r.count);
 
     if (hourlyChart) hourlyChart.destroy();
-
     const ctx = document.getElementById('hourlyChart').getContext('2d');
     hourlyChart = new Chart(ctx, {
       type: 'bar',
@@ -368,11 +425,7 @@
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: ctx => ` ${ctx.raw} patient${ctx.raw > 1 ? 's' : ''}`
-            }
-          }
+          tooltip: { callbacks: { label: c => ` ${c.raw} patient${c.raw > 1 ? 's' : ''}` } }
         },
         scales: {
           x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#9B9A94' } },
@@ -382,10 +435,9 @@
     });
   }
 
-  // Init
+  // Init — load immediately, then every 30s
   loadStats();
-  // Refresh every 60s
-  setInterval(loadStats, 60000);
+  setInterval(loadStats, 30000);
 </script>
 </body>
 </html>

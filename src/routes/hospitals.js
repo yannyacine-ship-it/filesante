@@ -400,16 +400,28 @@ router.get('/:code/call-alerts',
  */
 router.get('/all/admin-stats', async (req, res) => {
   try {
+    // Check which optional columns exist to build a safe query
+    const { rows: cols } = await db.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'patients'
+        AND column_name IN ('manually_notified')
+    `);
+    const hasManuallyNotified = cols.some(c => c.column_name === 'manually_notified');
+
+    const manuallyNotifiedExpr = hasManuallyNotified
+      ? `COUNT(p.id) FILTER (WHERE p.manually_notified = true AND p.created_at >= CURRENT_DATE)`
+      : `0`;
+
     const { rows } = await db.query(`
       SELECT
         h.code, h.name, h.is_active,
-        COUNT(p.id) FILTER (WHERE p.status IN ('waiting','notified')) as queue_count,
-        COUNT(p.id) FILTER (WHERE p.status = 'notified') as notified_count,
-        COUNT(p.id) FILTER (WHERE p.status = 'non_confirme' AND p.created_at >= CURRENT_DATE) as non_confirme_today,
-        COUNT(p.id) FILTER (WHERE p.status = 'noshow' AND p.created_at >= CURRENT_DATE) as noshow_today,
-        COUNT(p.id) FILTER (WHERE p.status = 'returned' AND p.created_at >= CURRENT_DATE) as returned_today,
-        COUNT(p.id) FILTER (WHERE p.manually_notified = true AND p.created_at >= CURRENT_DATE) as manually_notified_today,
-        AVG(p.estimated_wait_minutes) FILTER (WHERE p.status IN ('waiting','notified')) as avg_wait
+        COUNT(p.id) FILTER (WHERE p.status IN ('waiting','notified')) AS queue_count,
+        COUNT(p.id) FILTER (WHERE p.status = 'notified') AS notified_count,
+        COUNT(p.id) FILTER (WHERE p.status = 'non_confirme' AND p.created_at >= CURRENT_DATE) AS non_confirme_today,
+        COUNT(p.id) FILTER (WHERE p.status = 'noshow' AND p.created_at >= CURRENT_DATE) AS noshow_today,
+        COUNT(p.id) FILTER (WHERE p.status = 'returned' AND p.created_at >= CURRENT_DATE) AS returned_today,
+        ${manuallyNotifiedExpr} AS manually_notified_today,
+        ROUND(AVG(p.estimated_wait_minutes) FILTER (WHERE p.status IN ('waiting','notified'))) AS avg_wait
       FROM hospitals h
       LEFT JOIN patients p ON p.hospital_id = h.id
       GROUP BY h.id, h.code, h.name, h.is_active
@@ -449,31 +461,76 @@ router.get('/all/admin-stats', async (req, res) => {
       ORDER BY hour
     `);
 
+    // Trend data: compare last 30 min vs previous 30 min for each KPI
+    const { rows: trendRows } = await db.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 minutes') AS queue_recent,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '60 minutes'
+                           AND created_at  <  NOW() - INTERVAL '30 minutes') AS queue_prev,
+        COUNT(*) FILTER (WHERE status = 'returned'
+                           AND returned_at >= NOW() - INTERVAL '30 minutes') AS returned_recent,
+        COUNT(*) FILTER (WHERE status = 'returned'
+                           AND returned_at >= NOW() - INTERVAL '60 minutes'
+                           AND returned_at  <  NOW() - INTERVAL '30 minutes') AS returned_prev,
+        COUNT(*) FILTER (WHERE status IN ('noshow','non_confirme')
+                           AND updated_at >= NOW() - INTERVAL '30 minutes') AS lwbs_recent,
+        COUNT(*) FILTER (WHERE status IN ('noshow','non_confirme')
+                           AND updated_at >= NOW() - INTERVAL '60 minutes'
+                           AND updated_at  <  NOW() - INTERVAL '30 minutes') AS lwbs_prev,
+        ROUND(AVG(estimated_wait_minutes) FILTER (WHERE status IN ('waiting','notified'))) AS avg_wait_now
+      FROM patients
+      WHERE created_at >= CURRENT_DATE
+    `);
+    const trend = trendRows[0] || {};
+
+    // Helper: compute trend direction (+1 = improving, -1 = degrading, 0 = stable)
+    const dir = (recent, prev, higherIsBetter) => {
+      const r = parseInt(recent) || 0;
+      const p = parseInt(prev)   || 0;
+      if (r === p) return 0;
+      return (r > p) === higherIsBetter ? 1 : -1;
+    };
+
+    const trends = {
+      // More patients queued recently = more demand (neutral/slight negative)
+      queue:    dir(trend.queue_recent,   trend.queue_prev,   false),
+      // More returned recently = good
+      returned: dir(trend.returned_recent, trend.returned_prev, true),
+      // More LWBS recently = bad
+      lwbs:     dir(trend.lwbs_recent,    trend.lwbs_prev,    false),
+      // Lower avg wait = good (compare current state)
+      avgWait:  0  // computed from snapshot, tracked client-side
+    };
+
     res.json({
       success: true,
       data: {
         hospitals: rows.map(h => {
           const cv = civiereMap[h.code] || {};
+          const noshow    = parseInt(h.noshow_today)      || 0;
+          const nonConf   = parseInt(h.non_confirme_today) || 0;
           return {
             code: h.code,
             name: h.name,
             isActive: h.is_active,
-            queueCount: parseInt(h.queue_count) || 0,
+            queueCount: parseInt(h.queue_count)       || 0,
             notifiedCount: parseInt(h.notified_count) || 0,
-            lwbs: parseInt(h.noshow_today) + parseInt(h.non_confirme_today || 0),
+            lwbs: noshow + nonConf,
             returnedToday: parseInt(h.returned_today) || 0,
             manuallyNotifiedToday: parseInt(h.manually_notified_today) || 0,
-            avgWaitMinutes: Math.round(parseFloat(h.avg_wait) || 0),
+            avgWaitMinutes: parseInt(h.avg_wait)      || 0,
             activeCivieres: parseInt(cv.active_civieres) || 0,
-            civieresToday: parseInt(cv.total_today) || 0,
-            avgCiviereOccupationMin: parseInt(cv.avg_occupation_min) || null,
+            civieresToday: parseInt(cv.total_today)   || 0,
+            avgCiviereOccupationMin: parseInt(cv.avg_occupation_min)         || null,
             avgResultsLiberationMin: parseInt(cv.avg_results_liberation_min) || null
           };
         }),
         hourlyPatients: hourly.map(r => ({
           hour: r.hour,
           count: parseInt(r.count)
-        }))
+        })),
+        trends,
+        globalAvgWait: parseInt(trend.avg_wait_now) || 0
       }
     });
   } catch (error) {
