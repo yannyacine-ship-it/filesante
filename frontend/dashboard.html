@@ -14,6 +14,7 @@
       --amber-50: #FFF8E6; --amber-400: #F59E0B; --amber-600: #B45309;
       --green-50: #EDFAF4; --green-400: #22C55E; --green-600: #166534;
       --red-50: #FEF2F2; --red-400: #F87171; --red-600: #DC2626;
+      --purple-50: #F5F3FF; --purple-600: #7C3AED;
       --gray-50: #F8F7F5; --gray-100: #EDEDEA; --gray-200: #DDDCDA;
       --gray-300: #C8C7C2; --gray-400: #9B9A94; --gray-600: #5C5C58;
       --gray-700: #3D3D3A; --gray-900: #1A1A18;
@@ -58,7 +59,8 @@
       margin-top: auto; padding: 16px 20px 0;
       border-top: 1px solid rgba(255,255,255,0.07);
     }
-    .nurse-info { display: flex; align-items: center; gap: 10px; }
+    .nurse-info { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .nurse-info:hover .nurse-name { color: rgba(255,255,255,0.9); }
     .nurse-avatar {
       width: 32px; height: 32px; border-radius: 50%;
       background: var(--blue-600); display: flex; align-items: center;
@@ -72,16 +74,16 @@
 
     .topbar {
       background: var(--white); border-bottom: 1px solid var(--gray-100);
-      padding: 16px 28px; display: flex; align-items: center;
-      justify-content: space-between; flex-shrink: 0;
+      padding: 14px 24px; display: flex; align-items: center;
+      justify-content: space-between; flex-shrink: 0; gap: 12px;
     }
     .topbar-left h1 { font-size: 17px; font-weight: 600; color: var(--gray-900); }
     .topbar-left p { font-size: 12px; color: var(--gray-400); margin-top: 1px; }
-    .topbar-actions { display: flex; gap: 10px; }
+    .topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
     .btn {
       display: inline-flex; align-items: center; gap: 7px;
-      padding: 9px 16px; border-radius: 9px; font-family: 'DM Sans', sans-serif;
+      padding: 8px 14px; border-radius: 9px; font-family: 'DM Sans', sans-serif;
       font-size: 13px; font-weight: 500; cursor: pointer; border: none;
       transition: all 0.15s; text-decoration: none;
     }
@@ -91,6 +93,10 @@
     .btn-scan:hover { background: #D1FAE5; }
     .btn-ghost { background: var(--gray-50); color: var(--gray-700); border: 1px solid var(--gray-100); }
     .btn-ghost:hover { background: var(--gray-100); }
+    .btn-rapport { background: var(--gray-50); color: var(--gray-700); border: 1px solid var(--gray-200); }
+    .btn-rapport:hover { background: var(--gray-100); }
+    .btn-nurse { background: var(--purple-50); color: var(--purple-600); border: 1.5px solid #DDD6FE; }
+    .btn-nurse:hover { background: #EDE9FE; }
 
     .content { padding: 24px 28px; flex: 1; overflow-y: auto; }
 
@@ -120,7 +126,7 @@
     /* ── QUEUE TABLE ── */
     .queue-section {
       background: var(--white); border-radius: 16px;
-      border: 1px solid var(--gray-100); overflow: hidden;
+      border: 1px solid var(--gray-100); overflow: hidden; margin-bottom: 24px;
     }
     .queue-header {
       padding: 16px 20px; border-bottom: 1px solid var(--gray-100);
@@ -140,7 +146,7 @@
 
     table { width: 100%; border-collapse: collapse; }
     thead th {
-      padding: 10px 16px; text-align: left;
+      padding: 10px 14px; text-align: left;
       font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
       text-transform: uppercase; color: var(--gray-400);
       background: var(--gray-50); border-bottom: 1px solid var(--gray-100);
@@ -148,7 +154,7 @@
     tbody tr { border-bottom: 1px solid var(--gray-100); transition: background 0.1s; }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: var(--gray-50); }
-    td { padding: 13px 16px; font-size: 13px; }
+    td { padding: 12px 14px; font-size: 13px; }
 
     .patient-id { font-weight: 600; color: var(--gray-900); font-size: 14px; }
     .patient-sub { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
@@ -169,7 +175,16 @@
     .chip-notified { background: var(--amber-50); color: var(--amber-600); }
     .chip-returned { background: var(--green-50); color: var(--green-600); }
     .chip-noshow   { background: var(--red-50);   color: var(--red-600); }
+    .chip-non-confirme { background: var(--red-50); color: var(--red-600); }
     .chip-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+    /* ── NOTE BADGE ── */
+    .badge-manual {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--purple-50); color: var(--purple-600);
+      font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 100px;
+      white-space: nowrap;
+    }
 
     .action-btn {
       padding: 5px 10px; border-radius: 7px; font-size: 11px; font-weight: 500;
@@ -183,6 +198,88 @@
     .action-noshow { background: var(--red-50); color: var(--red-600); }
     .action-noshow:hover { background: #FEE2E2; }
 
+    /* ── NON_CONFIRME ROW ── */
+    tr.row-non-confirme { background: #FEF2F2; }
+    tr.row-non-confirme:hover { background: #FEE2E2; }
+
+    /* ── CALL ALERTS BANNER ── */
+    .call-alerts-section {
+      background: var(--white); border-radius: 14px; border: 2px solid #FDE68A;
+      margin-bottom: 18px; overflow: hidden; display: none;
+    }
+    .call-alerts-section.has-alerts { display: block; }
+    .call-alerts-header {
+      background: var(--amber-50); padding: 12px 18px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; font-weight: 600; color: #92400E;
+    }
+    .call-alert-row {
+      padding: 12px 18px; border-bottom: 1px solid var(--gray-100);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .call-alert-row:last-child { border-bottom: none; }
+    .call-alert-info { font-size: 13px; }
+    .call-alert-info strong { color: var(--gray-900); }
+    .call-alert-info span { color: var(--gray-400); font-size: 11px; margin-left: 8px; }
+    .call-tel-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--green-50); color: var(--green-600);
+      border: 1.5px solid #BBF7D0; border-radius: 8px;
+      padding: 6px 12px; font-size: 12px; font-weight: 600;
+      text-decoration: none; margin-right: 8px;
+    }
+    .btn-called {
+      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--gray-200);
+      background: var(--gray-50); color: var(--gray-600);
+      font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer;
+    }
+    .btn-called:hover { background: var(--gray-100); }
+
+    /* ── CIVIÈRE SECTION ── */
+    .civiere-section {
+      background: var(--white); border-radius: 16px;
+      border: 1px solid var(--gray-100); overflow: hidden; margin-bottom: 24px;
+    }
+    .civiere-header {
+      padding: 16px 20px; border-bottom: 1px solid var(--gray-100);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .civiere-header h2 { font-size: 15px; font-weight: 600; color: var(--gray-900); }
+    .civiere-count { font-size: 12px; color: var(--gray-400); }
+    .btn-civiere {
+      background: var(--teal-50); color: var(--teal-600);
+      border: 1.5px solid #99F6E4; font-size: 12px; padding: 7px 14px;
+    }
+    .btn-civiere:hover { background: #CCFBF1; }
+    .civiere-empty {
+      padding: 32px 20px; text-align: center;
+      color: var(--gray-400); font-size: 13px;
+    }
+    .civiere-status {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px; border-radius: 100px; font-size: 11px; font-weight: 500;
+    }
+    .cv-attente   { background: var(--blue-50);   color: var(--blue-600); }
+    .cv-resultats { background: var(--amber-50);  color: var(--amber-600); }
+    .cv-decision  { background: var(--purple-50); color: var(--purple-600); }
+    .cv-liberee   { background: var(--green-50);  color: var(--green-600); }
+
+    /* Civière alert banner */
+    .civiere-alert-bar {
+      background: #FFFBEB; border: 2px solid #FDE68A; border-radius: 12px;
+      padding: 14px 18px; margin-bottom: 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .civiere-alert-text { font-size: 13px; font-weight: 600; color: #92400E; }
+    .civiere-alert-text span { font-weight: 400; color: #B45309; margin-left: 6px; }
+    .btn-civiere-liberee {
+      padding: 7px 14px; border-radius: 8px; border: none;
+      background: var(--green-50); color: var(--green-600);
+      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1px solid #BBF7D0;
+    }
+    .btn-civiere-liberee:hover { background: #D1FAE5; }
+
     /* ── MODAL ── */
     .modal-overlay {
       display: none; position: fixed; inset: 0;
@@ -192,7 +289,7 @@
     .modal-overlay.open { display: flex; }
     .modal {
       background: var(--white); border-radius: 20px;
-      padding: 32px; max-width: 420px; width: 100%;
+      padding: 32px; max-width: 440px; width: 100%;
       box-shadow: 0 20px 60px rgba(0,0,0,0.2);
       animation: modal-in 0.2s ease;
     }
@@ -214,6 +311,17 @@
       transition: border-color 0.15s; outline: none;
     }
     .form-select:focus, .form-input:focus { border-color: var(--blue-400); }
+    .form-input.input-error { border-color: var(--red-400); background: #FEF2F2; }
+    .form-error-msg { font-size: 11px; color: var(--red-600); margin-top: 4px; display: none; }
+    .form-error-msg.show { display: block; }
+
+    /* Notification mode toggle */
+    .notif-toggle { display: flex; gap: 0; border: 1.5px solid var(--gray-200); border-radius: 9px; overflow: hidden; }
+    .notif-toggle-btn {
+      flex: 1; padding: 10px; border: none; font-family: 'DM Sans', sans-serif;
+      font-size: 13px; cursor: pointer; transition: all 0.15s; background: var(--white); color: var(--gray-400);
+    }
+    .notif-toggle-btn.active { background: var(--blue-600); color: white; font-weight: 600; }
 
     /* Scan modal */
     .scan-area {
@@ -251,21 +359,6 @@
     .modal-actions { display: flex; gap: 10px; }
     .modal-actions .btn { flex: 1; justify-content: center; }
 
-    /* ── TOAST ── */
-    .toast {
-      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
-      background: var(--gray-900); color: white; padding: 12px 20px;
-      border-radius: 100px; font-size: 13px; font-weight: 500;
-      display: flex; align-items: center; gap: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 2000;
-      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-      white-space: nowrap;
-    }
-    .toast.show { transform: translateX(-50%) translateY(0); }
-    .toast-dot { width: 7px; height: 7px; border-radius: 50%; }
-    .toast-green { background: var(--green-400); }
-    .toast-amber { background: var(--amber-400); }
-
     /* ── SURGE BUTTON ── */
     .btn-surge {
       background: #DC2626; color: white; border: none;
@@ -286,55 +379,21 @@
     .surge-opt:hover, .surge-opt.selected { border-color: var(--red-600); background: var(--red-50); color: var(--red-600); }
     .surge-opt small { display: block; font-size: 11px; font-weight: 400; color: var(--gray-400); margin-top: 4px; }
 
-    /* ── CALL ALERTS BANNER ── */
-    .call-alerts-section {
-      background: var(--white); border-radius: 14px; border: 2px solid #FDE68A;
-      margin-bottom: 18px; overflow: hidden; display: none;
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--gray-900); color: white; padding: 12px 20px;
+      border-radius: 100px; font-size: 13px; font-weight: 500;
+      display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 2000;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      white-space: nowrap;
     }
-    .call-alerts-section.has-alerts { display: block; }
-    .call-alerts-header {
-      background: var(--amber-50); padding: 12px 18px;
-      display: flex; align-items: center; gap: 10px;
-      font-size: 13px; font-weight: 600; color: #92400E;
-    }
-    .call-alert-row {
-      padding: 12px 18px; border-bottom: 1px solid var(--gray-100);
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .call-alert-row:last-child { border-bottom: none; }
-    .call-alert-info { font-size: 13px; }
-    .call-alert-info strong { color: var(--gray-900); }
-    .call-alert-info span { color: var(--gray-400); font-size: 11px; margin-left: 8px; }
-    .call-tel-link {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--green-50); color: var(--green-600);
-      border: 1.5px solid #BBF7D0; border-radius: 8px;
-      padding: 6px 12px; font-size: 12px; font-weight: 600;
-      text-decoration: none; margin-right: 8px;
-    }
-    .btn-called {
-      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--gray-200);
-      background: var(--gray-50); color: var(--gray-600);
-      font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer;
-    }
-    .btn-called:hover { background: var(--gray-100); }
-
-    /* ── NON_CONFIRME ROW ── */
-    .chip-non-confirme { background: var(--red-50); color: var(--red-600); }
-    tr.row-non-confirme { background: #FEF2F2; }
-    tr.row-non-confirme:hover { background: #FEE2E2; }
-
-    /* ── NOTIFICATION MODE TOGGLE ── */
-    .notif-toggle { display: flex; gap: 0; border: 1.5px solid var(--gray-200); border-radius: 9px; overflow: hidden; }
-    .notif-toggle-btn {
-      flex: 1; padding: 10px; border: none; font-family: 'DM Sans', sans-serif;
-      font-size: 13px; cursor: pointer; transition: all 0.15s; background: var(--white); color: var(--gray-400);
-    }
-    .notif-toggle-btn.active { background: var(--blue-600); color: white; font-weight: 600; }
-
-    /* ── RAPPORT BTN ── */
-    .btn-rapport { background: var(--gray-50); color: var(--gray-700); border: 1px solid var(--gray-200); }
-    .btn-rapport:hover { background: var(--gray-100); }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .toast-green { background: var(--green-400); }
+    .toast-amber { background: var(--amber-400); }
+    .toast-red   { background: var(--red-400); }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
@@ -383,11 +442,11 @@
     </div>
 
     <div class="sidebar-footer">
-      <div class="nurse-info">
-        <div class="nurse-avatar">ML</div>
+      <div class="nurse-info" onclick="openModal('nurse')" title="Changer d'infirmière">
+        <div class="nurse-avatar" id="nurseAvatar">?</div>
         <div>
-          <div class="nurse-name">Marie-Laure T.</div>
-          <div class="nurse-role">Infirmière — Triage</div>
+          <div class="nurse-name" id="nurseNameDisplay">Infirmière</div>
+          <div class="nurse-role">Triage P4/P5 · ✏️ modifier</div>
         </div>
       </div>
     </div>
@@ -401,6 +460,9 @@
         <p>Urgences P4/P5 — <span id="topbarDate"></span></p>
       </div>
       <div class="topbar-actions">
+        <button class="btn btn-nurse" onclick="openModal('nurse')">
+          👩‍⚕️ Changer d'infirmière
+        </button>
         <button class="btn btn-rapport" onclick="downloadReport()">
           📋 Rapport de quart
         </button>
@@ -423,28 +485,31 @@
       <!-- KPI STRIP -->
       <div class="kpi-strip">
         <div class="kpi-card">
-          <div class="kpi-value" id="kpiTotal">14</div>
+          <div class="kpi-value" id="kpiTotal">—</div>
           <div class="kpi-label">Patients en file</div>
-          <div class="kpi-badge badge-blue">Actif</div>
+          <div class="kpi-badge badge-blue" id="kpiBadgeTotal">Actif</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-value">3</div>
+          <div class="kpi-value" id="kpiNotified">—</div>
           <div class="kpi-label">Notifiés — En route</div>
           <div class="kpi-badge badge-amber">En attente retour</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-value">8</div>
-          <div class="kpi-label">Rentrés ce soir</div>
-          <div class="kpi-badge badge-green">+2 vs hier</div>
+          <div class="kpi-value" id="kpiReturned">—</div>
+          <div class="kpi-label">Rentrés aujourd'hui</div>
+          <div class="kpi-badge badge-green">Journée</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-value">~2h10</div>
+          <div class="kpi-value" id="kpiAvgWait">—</div>
           <div class="kpi-label">Temps d'attente moyen</div>
           <div class="kpi-badge badge-amber">P4/P5</div>
         </div>
       </div>
 
-      <!-- CALL ALERTS SECTION (Feature 6) -->
+      <!-- CIVIÈRE ALERTS (persistent until dismissed) -->
+      <div id="civiereAlertContainer"></div>
+
+      <!-- CALL ALERTS SECTION -->
       <div class="call-alerts-section" id="callAlertsSection">
         <div class="call-alerts-header">
           📞 <span>Patients à appeler — Mode appel téléphonique</span>
@@ -457,7 +522,7 @@
         <div class="queue-header">
           <div>
             <h2>File virtuelle</h2>
-            <p class="queue-count">14 patients actifs</p>
+            <p class="queue-count" id="queueCountLabel">— patients actifs</p>
           </div>
           <div class="filter-tabs">
             <button class="filter-tab active" onclick="filterQueue('all', this)">Tous</button>
@@ -475,6 +540,7 @@
               <th>Priorité</th>
               <th>Enregistré</th>
               <th>Statut</th>
+              <th>Note</th>
               <th>Code retour</th>
               <th>Actions</th>
             </tr>
@@ -483,6 +549,23 @@
           </tbody>
         </table>
       </div>
+
+      <!-- CIVIÈRE SECTION -->
+      <div class="civiere-section">
+        <div class="civiere-header">
+          <div>
+            <h2>🛏 Patients sur civière</h2>
+            <p class="civiere-count" id="civiereCountLabel">Patients physiquement à l'urgence</p>
+          </div>
+          <button class="btn btn-civiere" onclick="openModal('civiere')">
+            + Ajouter civière
+          </button>
+        </div>
+        <div id="civiereBody">
+          <div class="civiere-empty">Aucun patient sur civière pour l'instant</div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -494,7 +577,7 @@
       <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="var(--blue-600)" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
     </div>
     <div class="modal-title">Ajouter à la file virtuelle</div>
-    <div class="modal-sub">Enregistrez le patient et générez son QR code d'accès.</div>
+    <div class="modal-sub">Enregistrez le patient et générez son code d'accès.</div>
 
     <div class="form-group">
       <label class="form-label">Priorité de triage</label>
@@ -510,30 +593,41 @@
     <div class="form-group">
       <label class="form-label">Mode de notification</label>
       <div class="notif-toggle">
-        <button class="notif-toggle-btn active" id="btnModeSms" onclick="setNotifMode('sms')">📱 SMS automatique</button>
+        <button class="notif-toggle-btn active" id="btnModeSms" onclick="setNotifMode('sms')">📱 SMS (QR code)</button>
         <button class="notif-toggle-btn" id="btnModeCall" onclick="setNotifMode('call')">📞 Appel téléphonique</button>
       </div>
     </div>
 
+    <!-- Phone field — visible only for call mode -->
+    <div class="form-group" id="callPhoneGroup" style="display:none;">
+      <label class="form-label">Numéro de téléphone <span style="color:var(--red-600)">*</span></label>
+      <input class="form-input" type="tel" id="addPhone"
+        placeholder="Ex: 5141234567"
+        oninput="validateCallPhone()"
+        inputmode="numeric">
+      <div class="form-error-msg" id="phoneError">Numéro requis pour recevoir vos notifications</div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('add')">Annuler</button>
-      <button class="btn btn-primary" onclick="addPatient()">
+      <button class="btn btn-primary" id="btnAddPatient" onclick="addPatient()">
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-        Générer QR & Ajouter
+        <span id="btnAddLabel">Générer QR & Ajouter</span>
       </button>
     </div>
   </div>
 </div>
 
-<!-- ═══ MODAL : QR CODE PATIENT ═══ -->
+<!-- ═══ MODAL : QR CODE PATIENT (SMS mode only) ═══ -->
 <div class="modal-overlay" id="modal-qr">
   <div class="modal" style="text-align:center;">
     <div class="modal-icon" style="background:var(--blue-50);margin:0 auto 18px;">
       <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="var(--blue-600)" stroke-width="2"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M16 16h2v2h-2zM18 14h2v2h-2zM14 16v2h2v-2zM14 14h2v-2h-2zM16 18h2v2h-2z"/></svg>
     </div>
     <div class="modal-title">Patient enregistré ✓</div>
-    <div class="modal-sub" id="qrPatientInfo">Le patient peut scanner ce QR code avec son téléphone.</div>
-    <div id="qrContainer" style="margin:20px auto;width:200px;height:200px;"></div>
+    <div class="modal-sub" id="qrPatientInfo">Le patient scanne ce QR et entre son numéro de téléphone.</div>
+    <div style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">📱 Le patient entrera son numéro — requis (10 chiffres min.)</div>
+    <div id="qrContainer" style="margin:16px auto;width:200px;height:200px;"></div>
     <div style="background:var(--gray-50);border-radius:10px;padding:10px;margin-bottom:20px;">
       <div style="font-size:11px;color:var(--gray-400);margin-bottom:4px;">Code de retour</div>
       <div id="qrReturnCode" style="font-size:28px;font-weight:600;letter-spacing:8px;color:var(--gray-900);font-family:DM Serif Display,Georgia,serif;"></div>
@@ -553,7 +647,6 @@
     <div class="modal-title">Confirmer le retour du patient</div>
     <div class="modal-sub">Scannez le QR code du patient <strong>ou</strong> saisissez son code de retour à 4 chiffres.</div>
 
-    <!-- Scan area with real camera -->
     <div class="scan-area" id="scanArea">
       <div class="scan-corner tl"></div>
       <div class="scan-corner tr"></div>
@@ -574,14 +667,12 @@
       </button>
     </div>
 
-    <!-- OR divider -->
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:12px;color:var(--gray-400);">
       <div style="flex:1;height:1px;background:var(--gray-100);"></div>
       ou entrez le code manuellement
       <div style="flex:1;height:1px;background:var(--gray-100);"></div>
     </div>
 
-    <!-- Code input -->
     <div class="code-input-row" style="margin-bottom:20px;">
       <input class="code-digit" maxlength="1" type="text" inputmode="numeric" id="d1" oninput="moveDigit(this,'d2')">
       <input class="code-digit" maxlength="1" type="text" inputmode="numeric" id="d2" oninput="moveDigit(this,'d3')">
@@ -630,6 +721,78 @@
   </div>
 </div>
 
+<!-- ═══ MODAL : CHANGER D'INFIRMIÈRE ═══ -->
+<div class="modal-overlay" id="modal-nurse">
+  <div class="modal">
+    <div class="modal-icon" style="background:var(--purple-50);">
+      <span style="font-size:24px;">👩‍⚕️</span>
+    </div>
+    <div class="modal-title">Changer d'infirmière</div>
+    <div class="modal-sub">Mettez à jour le nom de l'infirmière en charge. Ce nom apparaîtra dans les rapports de quart.</div>
+    <div class="form-group">
+      <label class="form-label">Prénom</label>
+      <input class="form-input" type="text" id="nurseFirstName" placeholder="Ex: Marie-Laure" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nom de famille</label>
+      <input class="form-input" type="text" id="nurseLastName" placeholder="Ex: Tremblay" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('nurse')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveNurse()">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        Confirmer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL : AJOUTER CIVIÈRE ═══ -->
+<div class="modal-overlay" id="modal-civiere">
+  <div class="modal">
+    <div class="modal-icon" style="background:var(--teal-50);">
+      <span style="font-size:24px;">🛏</span>
+    </div>
+    <div class="modal-title">Ajouter un patient sur civière</div>
+    <div class="modal-sub">Ce patient est physiquement à l'urgence — il n'est pas dans la file virtuelle.</div>
+    <div class="form-group">
+      <label class="form-label">Nom du patient <span style="color:var(--red-600)">*</span></label>
+      <input class="form-input" type="text" id="civierePatientName" placeholder="Prénom Nom">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Numéro de civière <span style="color:var(--red-600)">*</span></label>
+      <select class="form-select" id="civiereNumero">
+        <option value="">— Sélectionner —</option>
+        <option value="1">Civière #1</option><option value="2">Civière #2</option>
+        <option value="3">Civière #3</option><option value="4">Civière #4</option>
+        <option value="5">Civière #5</option><option value="6">Civière #6</option>
+        <option value="7">Civière #7</option><option value="8">Civière #8</option>
+        <option value="9">Civière #9</option><option value="10">Civière #10</option>
+        <option value="11">Civière #11</option><option value="12">Civière #12</option>
+        <option value="13">Civière #13</option><option value="14">Civière #14</option>
+        <option value="15">Civière #15</option><option value="16">Civière #16</option>
+        <option value="17">Civière #17</option><option value="18">Civière #18</option>
+        <option value="19">Civière #19</option><option value="20">Civière #20</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Raison d'attente</label>
+      <select class="form-select" id="civiereReason">
+        <option value="Résultats labo">Résultats labo</option>
+        <option value="Résultats radio">Résultats radio</option>
+        <option value="Consultation spécialiste">Consultation spécialiste</option>
+        <option value="Autre">Autre</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('civiere')">Annuler</button>
+      <button class="btn btn-primary" onclick="addCiviere()">
+        🛏 Ajouter civière
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast">
   <span class="toast-dot toast-green" id="toastDot"></span>
@@ -637,7 +800,7 @@
 </div>
 
 <script>
-  // ── DATA ──
+  // ── CONSTANTS ──
   const HOSPITALS = {
     HMR: 'Hôpital Maisonneuve-Rosemont',
     HND: 'Hôpital Notre-Dame',
@@ -655,21 +818,44 @@
     now.toLocaleDateString('fr-CA', {weekday:'long', day:'numeric', month:'long'}) + ' — ' +
     now.toLocaleTimeString('fr-CA', {hour:'2-digit', minute:'2-digit'});
 
-  // ── QUEUE DATA ── (P4 sorted before P5, then by time)
+  // ── NURSE NAME (Feature 3) ──
+  function loadNurse() {
+    const first = localStorage.getItem('nurseFirstName') || '';
+    const last  = localStorage.getItem('nurseLastName')  || '';
+    const full  = [first, last].filter(Boolean).join(' ') || 'Infirmière';
+    const initials = [first[0], last[0]].filter(Boolean).join('').toUpperCase() || '?';
+    document.getElementById('nurseNameDisplay').textContent = full;
+    document.getElementById('nurseAvatar').textContent = initials;
+    if (first) document.getElementById('nurseFirstName').value = first;
+    if (last)  document.getElementById('nurseLastName').value  = last;
+  }
+
+  function saveNurse() {
+    const first = document.getElementById('nurseFirstName').value.trim();
+    const last  = document.getElementById('nurseLastName').value.trim();
+    if (!first && !last) { showToast('Veuillez entrer un nom', 'amber'); return; }
+    localStorage.setItem('nurseFirstName', first);
+    localStorage.setItem('nurseLastName',  last);
+    loadNurse();
+    closeModal('nurse');
+    showToast('Infirmière mise à jour : ' + [first, last].filter(Boolean).join(' '), 'green');
+  }
+
+  // ── DEMO QUEUE DATA ──
   let patients = [
-    { id: 'FS-0081', reason: 'Douleur genou', priority: 'P4', time: '18:32', status: 'notified', code: '4821', notifMode: 'sms' },
-    { id: 'FS-0084', reason: 'Contusion poignet', priority: 'P4', time: '19:03', status: 'waiting', code: '5591', notifMode: 'sms' },
-    { id: 'FS-0085', reason: 'Fièvre persistante', priority: 'P4', time: '19:11', status: 'notified', code: '2288', notifMode: 'call', phone: '5141234567' },
-    { id: 'FS-0088', reason: 'Coupure main', priority: 'P4', time: '19:31', status: 'returned', code: '1456', notifMode: 'sms' },
-    { id: 'FS-0082', reason: 'Éruption cutanée', priority: 'P5', time: '18:47', status: 'notified', code: '3317', notifMode: 'sms' },
-    { id: 'FS-0083', reason: 'Mal de gorge', priority: 'P5', time: '18:55', status: 'waiting', code: '7042', notifMode: 'sms' },
-    { id: 'FS-0086', reason: 'Douleur dos', priority: 'P5', time: '19:18', status: 'waiting', code: '6634', notifMode: 'call', phone: '5149876543' },
-    { id: 'FS-0087', reason: 'Nausées légères', priority: 'P5', time: '19:24', status: 'returned', code: '9103', notifMode: 'sms' },
+    { id: 'FS-0081', reason: 'Douleur genou', priority: 'P4', time: '18:32', status: 'notified', code: '4821', notifMode: 'sms', manuallyNotified: false },
+    { id: 'FS-0084', reason: 'Contusion poignet', priority: 'P4', time: '19:03', status: 'waiting', code: '5591', notifMode: 'sms', manuallyNotified: false },
+    { id: 'FS-0085', reason: 'Fièvre persistante', priority: 'P4', time: '19:11', status: 'notified', code: '2288', notifMode: 'call', phone: '5141234567', manuallyNotified: true },
+    { id: 'FS-0088', reason: 'Coupure main', priority: 'P4', time: '19:31', status: 'returned', code: '1456', notifMode: 'sms', manuallyNotified: false },
+    { id: 'FS-0082', reason: 'Éruption cutanée', priority: 'P5', time: '18:47', status: 'notified', code: '3317', notifMode: 'sms', manuallyNotified: false },
+    { id: 'FS-0083', reason: 'Mal de gorge', priority: 'P5', time: '18:55', status: 'waiting', code: '7042', notifMode: 'sms', manuallyNotified: false },
+    { id: 'FS-0086', reason: 'Douleur dos', priority: 'P5', time: '19:18', status: 'waiting', code: '6634', notifMode: 'call', phone: '5149876543', manuallyNotified: false },
+    { id: 'FS-0087', reason: 'Nausées légères', priority: 'P5', time: '19:24', status: 'returned', code: '9103', notifMode: 'sms', manuallyNotified: false },
   ];
 
   let currentFilter = 'all';
 
-  // ── RENDER QUEUE ──
+  // ── RENDER QUEUE (Feature 1: dynamic KPIs, Feature 2: Note column) ──
   function renderQueue() {
     const body = document.getElementById('queueBody');
     const filtered = currentFilter === 'all'
@@ -689,13 +875,18 @@
       const modeIcon = p.notifMode === 'call' ? '📞' : '📱';
 
       const actionsMap = {
-        waiting: `<button class="action-btn action-notify" onclick="notifyPatient('${p.id}')">Notifier</button>`,
-        notified: `<button class="action-btn action-confirm" onclick="confirmReturn('${p.id}')">✓ Présence</button>
-                   <button class="action-btn action-noshow" style="margin-left:5px" onclick="markNoShow('${p.id}')">Absent</button>`,
-        returned: `<span style="font-size:11px;color:var(--gray-300);">En attente soins</span>`,
-        noshow: `<span style="font-size:11px;color:var(--red-400);">Réassigné</span>`,
-        non_confirme: `<span style="font-size:11px;color:var(--red-600);font-weight:600;">⚠️ Alerte — Réassigner</span>`,
+        waiting:      `<button class="action-btn action-notify" onclick="notifyPatient('${p.id}')">Notifier</button>`,
+        notified:     `<button class="action-btn action-confirm" onclick="confirmReturn('${p.id}')">✓ Présence</button>
+                       <button class="action-btn action-noshow" style="margin-left:5px" onclick="markNoShow('${p.id}')">Absent</button>`,
+        returned:     `<span style="font-size:11px;color:var(--gray-300);">En attente soins</span>`,
+        noshow:       `<span style="font-size:11px;color:var(--red-400);">Réassigné</span>`,
+        non_confirme: `<span style="font-size:11px;color:var(--red-600);font-weight:600;">⚠️ Réassigner</span>`,
       };
+
+      // Note column: manually notified badge (Feature 2)
+      const noteCell = p.manuallyNotified
+        ? `<span class="badge-manual">✋ Rappelé manuellement</span>`
+        : `<span style="color:var(--gray-300);font-size:11px;">—</span>`;
 
       return `
         <tr${isNonConfirme ? ' class="row-non-confirme"' : ''}>
@@ -706,20 +897,34 @@
           <td><span class="priority-badge ${p.priority.toLowerCase()}">${p.priority}</span></td>
           <td style="color:var(--gray-400);font-size:12px;">${p.time}</td>
           <td>${statusMap[p.status] || ''}</td>
+          <td>${noteCell}</td>
           <td><code style="background:var(--gray-50);padding:3px 8px;border-radius:6px;font-size:13px;font-weight:600;letter-spacing:2px;color:var(--gray-700);">${p.code}</code></td>
           <td>${actionsMap[p.status] || ''}</td>
         </tr>`;
     }).join('');
 
-    // Update KPIs
-    document.getElementById('kpiTotal').textContent =
-      patients.filter(p => ['waiting','notified'].includes(p.status)).length;
-    document.querySelector('#kpiTotal').closest('.kpi-card').nextElementSibling.querySelector('.kpi-value').textContent =
-      patients.filter(p => p.status === 'notified').length;
-    document.querySelector('.queue-count').textContent =
+    // ── KPI UPDATE (Feature 1: dynamic after surge) ──
+    const activePatients = patients.filter(p => ['waiting','notified'].includes(p.status));
+    const notifiedPatients = patients.filter(p => p.status === 'notified');
+    const returnedPatients = patients.filter(p => p.status === 'returned');
+    document.getElementById('kpiTotal').textContent    = activePatients.length;
+    document.getElementById('kpiNotified').textContent = notifiedPatients.length;
+    document.getElementById('kpiReturned').textContent = returnedPatients.length;
+
+    // Avg wait: use estimated wait or fallback
+    const waitTimes = activePatients.map(p => p.estWait || p.estimatedWait || 120).filter(Boolean);
+    if (waitTimes.length > 0) {
+      const avg = Math.round(waitTimes.reduce((a,b) => a+b, 0) / waitTimes.length);
+      const h = Math.floor(avg / 60), m = avg % 60;
+      document.getElementById('kpiAvgWait').textContent = h > 0 ? `~${h}h${m > 0 ? m + 'min' : ''}` : `~${m}min`;
+    } else {
+      document.getElementById('kpiAvgWait').textContent = '—';
+    }
+
+    document.getElementById('queueCountLabel').textContent =
       filtered.length + ' patient' + (filtered.length > 1 ? 's' : '');
 
-    // Non_confirme alert count in filter tab
+    // Non-confirmé tab count
     const ncCount = patients.filter(p => p.status === 'non_confirme').length;
     const ncTab = document.querySelector('.filter-tab[onclick*="non_confirme"]');
     if (ncTab) ncTab.textContent = ncCount > 0 ? `Non confirmés (${ncCount})` : 'Non confirmés';
@@ -734,7 +939,7 @@
     renderQueue();
   }
 
-  // ── CALL ALERTS (Feature 6) ──
+  // ── CALL ALERTS (Feature 4: CALL mode with tel: link + "Appelé?" button) ──
   function renderCallAlerts() {
     const callPatients = patients.filter(p => p.notifMode === 'call' && ['waiting','notified'].includes(p.status));
     const section = document.getElementById('callAlertsSection');
@@ -746,18 +951,21 @@
     }
     section.classList.add('has-alerts');
 
-    list.innerHTML = callPatients.map(p => `
-      <div class="call-alert-row">
-        <div class="call-alert-info">
-          <strong>${p.id}</strong> — ${p.reason}
-          <span>${p.priority} · ${p.status === 'notified' ? '⚠️ À appeler MAINTENANT' : '~30 min'}</span>
-        </div>
-        <div>
-          ${p.phone ? `<a class="call-tel-link" href="tel:${p.phone}">📞 ${p.phone.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')}</a>` : ''}
-          <button class="btn-called" onclick="markCalled('${p.id}')">Appelé ✓</button>
-        </div>
-      </div>
-    `).join('');
+    list.innerHTML = callPatients.map(p => {
+      const isUrgent = p.status === 'notified';
+      const urgencyLabel = isUrgent ? '⚠️ APPELER MAINTENANT' : '~60 min — Préparer appel';
+      return `
+        <div class="call-alert-row">
+          <div class="call-alert-info">
+            <strong>${p.id}</strong> — ${p.reason}
+            <span>${p.priority} · ${urgencyLabel}</span>
+          </div>
+          <div>
+            ${p.phone ? `<a class="call-tel-link" href="tel:${p.phone}">📞 ${p.phone.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')}</a>` : ''}
+            <button class="btn-called" onclick="markCalled('${p.id}')">Appelé ✓</button>
+          </div>
+        </div>`;
+    }).join('');
   }
 
   function markCalled(id) {
@@ -769,17 +977,33 @@
   }
 
   // ── ACTIONS ──
-  async function notifyPatient(id) {
+  // Feature 2: detect if patient is not first in queue → set manuallyNotified
+  function notifyPatient(id) {
     const p = patients.find(x => x.id === id);
     if (!p) return;
-    p.status = 'notified'; renderQueue();
+
+    // Find waiting patients with same priority — is there someone ahead?
+    const waitingAhead = patients.filter(x =>
+      x.status === 'waiting' && x.priority === p.priority &&
+      x.id !== p.id && x.time < p.time  // created before this patient
+    );
+    if (waitingAhead.length > 0) {
+      p.manuallyNotified = true;
+    }
+
+    p.status = 'notified';
+    renderQueue();
+
     const label = p.notifMode === 'call' ? '📞 À appeler' : '📱 SMS envoyé';
-    showToast(label + ' — ' + id, 'green');
-    try {
-      await fetch('/api/patients/' + (p.dbId || id) + '/notify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }
-      });
-    } catch (_) {}
+    const manualNote = p.manuallyNotified ? ' — Rappel manuel' : '';
+    showToast(label + ' — ' + id + manualNote, p.manuallyNotified ? 'amber' : 'green');
+
+    // API call
+    fetch('/api/patients/' + (p.dbId || id.replace('FS-', '')) + '/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manuallyNotified: p.manuallyNotified })
+    }).catch(() => {});
   }
 
   function confirmReturn(id) {
@@ -792,7 +1016,7 @@
     if (p) { p.status = 'noshow'; renderQueue(); showToast('Patient marqué absent — ' + id, 'amber'); }
   }
 
-  // ── ADD PATIENT ──
+  // ── ADD PATIENT (Feature 4: call mode phone required) ──
   let nextId = 89;
   let currentNotifMode = 'sms';
 
@@ -800,17 +1024,69 @@
     currentNotifMode = mode;
     document.getElementById('btnModeSms').classList.toggle('active', mode === 'sms');
     document.getElementById('btnModeCall').classList.toggle('active', mode === 'call');
+    const phoneGroup = document.getElementById('callPhoneGroup');
+    phoneGroup.style.display = mode === 'call' ? 'block' : 'none';
+    document.getElementById('btnAddLabel').textContent =
+      mode === 'call' ? 'Ajouter à la file' : 'Générer QR & Ajouter';
+    if (mode === 'sms') {
+      document.getElementById('addPhone').classList.remove('input-error');
+      document.getElementById('phoneError').classList.remove('show');
+    }
+    updateAddButtonState();
+  }
+
+  function validateCallPhone() {
+    if (currentNotifMode !== 'call') return true;
+    const phone = document.getElementById('addPhone').value.replace(/\D/g, '');
+    const field = document.getElementById('addPhone');
+    const err   = document.getElementById('phoneError');
+    if (phone.length < 10) {
+      field.classList.add('input-error');
+      err.classList.add('show');
+      updateAddButtonState();
+      return false;
+    } else {
+      field.classList.remove('input-error');
+      err.classList.remove('show');
+      updateAddButtonState();
+      return true;
+    }
+  }
+
+  function updateAddButtonState() {
+    const btn = document.getElementById('btnAddPatient');
+    if (currentNotifMode === 'call') {
+      const phone = document.getElementById('addPhone').value.replace(/\D/g, '');
+      btn.disabled = phone.length < 10;
+      btn.style.opacity = phone.length < 10 ? '0.5' : '1';
+    } else {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    }
   }
 
   function addPatient() {
+    if (currentNotifMode === 'call' && !validateCallPhone()) return;
+
     const priority = document.getElementById('addPriority').value;
-    const reason = document.getElementById('addReason').value || 'Consultation générale';
+    const reason   = document.getElementById('addReason').value || 'Consultation générale';
+    const phone    = currentNotifMode === 'call'
+      ? document.getElementById('addPhone').value.replace(/\D/g, '')
+      : null;
     const code = String(Math.floor(1000 + Math.random() * 9000));
     const patientId = 'FS-00' + nextId++;
     const mins = now.getMinutes().toString().padStart(2,'0');
 
-    // Insert in correct priority order: P4 before P5
-    const newPatient = { id: patientId, reason, priority, time: now.getHours() + ':' + mins, status: 'waiting', code, notifMode: currentNotifMode };
+    const newPatient = {
+      id: patientId, reason, priority,
+      time: now.getHours() + ':' + mins,
+      status: 'waiting', code,
+      notifMode: currentNotifMode,
+      phone: phone,
+      manuallyNotified: false,
+      estWait: priority === 'P4' ? 180 : 240
+    };
+
     const insertIdx = priority === 'P4'
       ? patients.findIndex(p => p.priority === 'P5' || ['returned','noshow','non_confirme','cancelled'].includes(p.status))
       : patients.findIndex(p => ['returned','noshow','non_confirme','cancelled'].includes(p.status));
@@ -819,22 +1095,34 @@
 
     closeModal('add');
     renderQueue();
+
+    // Reset form
     document.getElementById('addReason').value = '';
+    document.getElementById('addPhone').value = '';
+    document.getElementById('addPhone').classList.remove('input-error');
+    document.getElementById('phoneError').classList.remove('show');
     setNotifMode('sms');
 
-    // Show QR modal
-    document.getElementById('qrPatientInfo').textContent = patientId + ' · ' + priority + ' · ' + reason;
-    document.getElementById('qrReturnCode').textContent = code;
-    const qrUrl = window.location.origin + '/patient.html?code=' + code + '&id=' + patientId + '&h=' + hospitalCode;
-    document.getElementById('qrContainer').innerHTML = '';
-    if (!window.QRCode) {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-      document.head.appendChild(script);
-      script.onload = () => generateQR(qrUrl);
-    } else { generateQR(qrUrl); }
-    openModal('qr');
-    showToast('Patient ajouté · Code : ' + code, 'green');
+    if (currentNotifMode === 'call' || phone === null) {
+      // CALL mode — no QR, just add
+    }
+
+    if (newPatient.notifMode === 'sms') {
+      // SMS mode: show QR
+      document.getElementById('qrPatientInfo').textContent = patientId + ' · ' + priority + ' · ' + reason;
+      document.getElementById('qrReturnCode').textContent = code;
+      const qrUrl = window.location.origin + '/patient.html?code=' + code + '&id=' + patientId + '&h=' + hospitalCode;
+      document.getElementById('qrContainer').innerHTML = '';
+      if (!window.QRCode) {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+        document.head.appendChild(script);
+        script.onload = () => generateQR(qrUrl);
+      } else { generateQR(qrUrl); }
+      openModal('qr');
+    } else {
+      showToast('📞 Patient ajouté — appel requis · Code : ' + code, 'amber');
+    }
   }
 
   function generateQR(url) {
@@ -844,7 +1132,7 @@
     });
   }
 
-  // ── SURGE (Feature 5) ──
+  // ── SURGE (Feature 1: refresh queue + KPIs after API call) ──
   let selectedSurgeMinutes = null;
 
   function selectSurge(mins, btn) {
@@ -862,30 +1150,64 @@
     document.querySelectorAll('.surge-opt').forEach(b => b.classList.remove('selected'));
     document.getElementById('btnApplySurge').disabled = true;
 
-    // Apply locally to all waiting/notified patients
+    // Apply locally for immediate UI feedback
     let affected = 0;
     patients.forEach(p => {
       if (['waiting','notified'].includes(p.status)) {
-        p.estWait = (p.estWait || 120) + mins;
+        p.estWait = (p.estWait || p.estimatedWait || 120) + mins;
         affected++;
       }
     });
     renderQueue();
-    showToast(`🚨 +${mins} min appliqués · SMS envoyés à ${affected} patients`, 'amber');
 
-    // Call backend
+    // Feature 1: toast with real count, recalculate avg wait
+    showToast(`Délai de +${mins}min appliqué à ${affected} patients`, 'amber');
+
+    // Feature 1: call API, then refresh stats from backend
     try {
-      await fetch('/api/hospitals/' + hospitalCode + '/surge', {
+      const resp = await fetch('/api/hospitals/' + hospitalCode + '/surge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ minutes: mins })
       });
+      if (resp.ok) {
+        const { data } = await resp.json();
+        // Re-render with actual count from API
+        showToast(`Délai de +${mins}min appliqué à ${data.affectedCount} patients`, 'amber');
+        // Refresh queue stats from backend
+        await refreshStatsFromAPI();
+      }
     } catch (_) {}
   }
 
-  // ── PDF RAPPORT (Feature 8) ──
+  // Feature 1: fetch real stats from backend and update KPI cards
+  async function refreshStatsFromAPI() {
+    try {
+      const resp = await fetch('/api/hospitals/' + hospitalCode + '/stats');
+      if (!resp.ok) return;
+      const { data } = await resp.json();
+      if (!data) return;
+      const rt = data.realtime || {};
+      const dl = data.daily    || {};
+      document.getElementById('kpiTotal').textContent    = rt.totalActive   ?? '—';
+      document.getElementById('kpiNotified').textContent = rt.notified       ?? '—';
+      document.getElementById('kpiReturned').textContent = dl.returned       ?? '—';
+      const avgMin = rt.avgEstimatedWait || dl.avgWaitTime;
+      if (avgMin) {
+        const h = Math.floor(avgMin / 60), m = avgMin % 60;
+        document.getElementById('kpiAvgWait').textContent = h > 0 ? `~${h}h${m > 0 ? m + 'min' : ''}` : `~${m}min`;
+      }
+    } catch (_) {}
+  }
+
+  // ── PDF RAPPORT (Feature 3: include nurse name) ──
   function downloadReport() {
-    window.open('/api/hospitals/' + hospitalCode + '/report', '_blank');
+    const first = localStorage.getItem('nurseFirstName') || '';
+    const last  = localStorage.getItem('nurseLastName')  || '';
+    const nurseName = [first, last].filter(Boolean).join(' ');
+    const url = '/api/hospitals/' + hospitalCode + '/report'
+      + (nurseName ? '?nurse=' + encodeURIComponent(nurseName) : '');
+    window.open(url, '_blank');
     showToast('📋 Génération du rapport...', 'green');
   }
 
@@ -898,8 +1220,6 @@
       const video = document.getElementById('scanVideo');
       const placeholder = document.getElementById('scanPlaceholder');
       const btnCamera = document.getElementById('btnCamera');
-      const scanLine = document.getElementById('scanLine');
-
       cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
       video.srcObject = cameraStream;
       video.setAttribute('playsinline', true);
@@ -908,8 +1228,6 @@
       placeholder.style.display = 'none';
       btnCamera.textContent = '⏹ Arrêter';
       btnCamera.onclick = stopCamera;
-      scanLine.style.display = 'block';
-
       if (!window.jsQR) {
         const script = document.createElement('script');
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
@@ -967,6 +1285,196 @@
     ['d1','d2','d3','d4'].forEach(id => document.getElementById(id).value = '');
   }
 
+  // ── CIVIÈRE (Feature 5) ──
+  let civieres = [];  // local state, synced with API
+
+  async function loadCivieres() {
+    try {
+      const resp = await fetch('/api/hospitals/' + hospitalCode + '/civieres');
+      if (resp.ok) {
+        const { data } = await resp.json();
+        civieres = data || [];
+      }
+    } catch (_) { /* API may not be ready, use local state */ }
+    renderCivieres();
+  }
+
+  function addCiviere() {
+    const patientName = document.getElementById('civierePatientName').value.trim();
+    const numero      = document.getElementById('civiereNumero').value;
+    const reason      = document.getElementById('civiereReason').value;
+
+    if (!patientName) { showToast('Veuillez entrer le nom du patient', 'amber'); return; }
+    if (!numero)      { showToast('Veuillez sélectionner un numéro de civière', 'amber'); return; }
+
+    const newCiviere = {
+      id: Date.now(), // temp local id
+      patient_name: patientName,
+      numero: parseInt(numero),
+      reason,
+      status: 'en_attente_resultats',
+      created_at: new Date().toISOString(),
+      results_flagged_at: null,
+      decision_at: null,
+      liberated_at: null,
+      alert_dismissed: false
+    };
+    civieres.push(newCiviere);
+
+    // Reset form
+    document.getElementById('civierePatientName').value = '';
+    document.getElementById('civiereNumero').value = '';
+    closeModal('civiere');
+    renderCivieres();
+    showToast('🛏 Civière #' + numero + ' — ' + patientName + ' ajouté', 'green');
+
+    // Sync with API
+    fetch('/api/hospitals/' + hospitalCode + '/civieres', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patientName, numero: parseInt(numero), reason })
+    }).then(r => r.json()).then(d => {
+      if (d.success && d.data) {
+        // Replace temp entry with real one from DB
+        const idx = civieres.findIndex(c => c.id === newCiviere.id);
+        if (idx !== -1) civieres[idx] = d.data;
+      }
+    }).catch(() => {});
+  }
+
+  function updateCiviereStatus(id, newStatus) {
+    const cv = civieres.find(c => c.id === id);
+    if (!cv) return;
+    const prev = cv.status;
+    cv.status = newStatus;
+
+    if (newStatus === 'resultats_signales') {
+      cv.results_flagged_at = new Date().toISOString();
+      cv.alert_dismissed = false;
+      showToast(`🔔 Civière #${cv.numero} · ${cv.patient_name} — Résultats signalés à l'équipe`, 'amber');
+    } else if (newStatus === 'decision_en_cours') {
+      cv.decision_at = new Date().toISOString();
+      showToast(`🏥 Civière #${cv.numero} — Décision médicale en cours`, 'green');
+    } else if (newStatus === 'liberee') {
+      cv.liberated_at = new Date().toISOString();
+      cv.alert_dismissed = true;
+      showToast(`✅ Civière #${cv.numero} · ${cv.patient_name} — Libérée`, 'green');
+    }
+
+    renderCivieres();
+
+    // Sync with API
+    fetch('/api/hospitals/' + hospitalCode + '/civieres/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    }).catch(() => {});
+  }
+
+  function dismissCiviereAlert(id) {
+    const cv = civieres.find(c => c.id === id);
+    if (cv) { cv.alert_dismissed = true; renderCivieres(); }
+  }
+
+  function renderCivieres() {
+    const activeCivieres = civieres.filter(c => c.status !== 'liberee');
+    document.getElementById('civiereCountLabel').textContent =
+      activeCivieres.length > 0
+        ? activeCivieres.length + ' civière' + (activeCivieres.length > 1 ? 's' : '') + ' occupée' + (activeCivieres.length > 1 ? 's' : '')
+        : 'Patients physiquement à l\'urgence';
+
+    // Persistent alert banners for "résultats signalés"
+    const alertContainer = document.getElementById('civiereAlertContainer');
+    const alertCivieres = civieres.filter(c =>
+      c.status === 'resultats_signales' && !c.alert_dismissed
+    );
+    alertContainer.innerHTML = alertCivieres.map(c => `
+      <div class="civiere-alert-bar">
+        <div>
+          <div class="civiere-alert-text">
+            🔔 Civière #${c.numero} · ${c.patient_name}
+            <span>Résultats signalés à l'équipe médicale. En attente décision.</span>
+          </div>
+          <div style="font-size:11px;color:var(--gray-400);margin-top:3px;">
+            Raison: ${c.reason || '—'} · Signalé à ${formatTime(c.results_flagged_at)}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-civiere-liberee" onclick="updateCiviereStatus(${c.id}, 'decision_en_cours')">
+            Décision en cours →
+          </button>
+          <button class="btn-civiere-liberee" onclick="updateCiviereStatus(${c.id}, 'liberee')">
+            🟢 Civière libérée
+          </button>
+          <button style="padding:7px 12px;border-radius:8px;border:1px solid var(--gray-200);background:var(--gray-50);color:var(--gray-400);font-size:12px;cursor:pointer;" onclick="dismissCiviereAlert(${c.id})">✕</button>
+        </div>
+      </div>
+    `).join('');
+
+    // Civière table
+    const body = document.getElementById('civiereBody');
+    if (activeCivieres.length === 0) {
+      body.innerHTML = '<div class="civiere-empty">Aucun patient sur civière pour l\'instant</div>';
+      return;
+    }
+
+    const statusLabels = {
+      en_attente_resultats: { css: 'cv-attente',   label: 'En attente résultats' },
+      resultats_signales:   { css: 'cv-resultats', label: 'Résultats signalés' },
+      decision_en_cours:    { css: 'cv-decision',  label: 'Décision médicale' },
+    };
+
+    const nextActions = {
+      en_attente_resultats: { label: '🔔 Signaler résultats', next: 'resultats_signales' },
+      resultats_signales:   { label: '🏥 Décision en cours', next: 'decision_en_cours' },
+      decision_en_cours:    { label: '✅ Civière libérée', next: 'liberee' },
+    };
+
+    body.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Civière</th>
+            <th>Patient</th>
+            <th>Raison</th>
+            <th>Statut</th>
+            <th>Durée</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${activeCivieres.map(c => {
+            const st = statusLabels[c.status] || { css: '', label: c.status };
+            const act = nextActions[c.status];
+            const duration = c.created_at
+              ? Math.round((Date.now() - new Date(c.created_at).getTime()) / 60000)
+              : 0;
+            const h = Math.floor(duration / 60), m = duration % 60;
+            const durationLabel = h > 0 ? `${h}h${m}min` : `${m}min`;
+            return `
+              <tr>
+                <td><strong style="font-size:15px;color:var(--gray-900);">#${c.numero}</strong></td>
+                <td>
+                  <div style="font-weight:600;color:var(--gray-900);">${c.patient_name}</div>
+                  <div style="font-size:11px;color:var(--gray-400);">Depuis ${formatTime(c.created_at)}</div>
+                </td>
+                <td style="font-size:12px;color:var(--gray-600);">${c.reason || '—'}</td>
+                <td><span class="civiere-status ${st.css}">${st.label}</span></td>
+                <td style="font-size:12px;color:var(--gray-600);">${durationLabel}</td>
+                <td>
+                  ${act ? `<button class="action-btn action-notify" onclick="updateCiviereStatus(${c.id},'${act.next}')">${act.label}</button>` : ''}
+                </td>
+              </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  function formatTime(isoStr) {
+    if (!isoStr) return '—';
+    return new Date(isoStr).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+  }
+
   // ── MODAL HELPERS ──
   function openModal(id) { document.getElementById('modal-' + id).classList.add('open'); }
   function closeModal(id) {
@@ -994,7 +1502,11 @@
   }
 
   // ── INIT ──
+  loadNurse();
   renderQueue();
+  loadCivieres();
+  // Try to refresh KPIs from backend on load
+  refreshStatsFromAPI();
 </script>
 </body>
 </html>
