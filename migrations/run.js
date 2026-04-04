@@ -222,7 +222,21 @@ async function runMigrations() {
   
   // Récupérer les migrations déjà exécutées
   const { rows: executed } = await db.query('SELECT name FROM migrations');
-  const executedNames = executed.map(r => r.name);
+  let executedNames = executed.map(r => r.name);
+
+  // Sanity check: si la migration 001 est enregistrée mais que hospitals n'existe pas,
+  // les tables ont été supprimées sans nettoyer le registre — on repart de zéro
+  if (executedNames.includes('001_initial_schema')) {
+    const { rows: tbl } = await db.query(`
+      SELECT COUNT(*) as c FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'hospitals'
+    `);
+    if (parseInt(tbl[0].c) === 0) {
+      logger.warn('Tables manquantes mais 001 enregistrée — nettoyage du registre et re-exécution');
+      await db.query('DELETE FROM migrations');
+      executedNames = [];
+    }
+  }
   
   for (const migration of migrations) {
     if (executedNames.includes(migration.name)) {
