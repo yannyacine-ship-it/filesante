@@ -79,6 +79,13 @@
     }
     .topbar-left h1 { font-size: 17px; font-weight: 600; color: var(--gray-900); }
     .topbar-left p { font-size: 12px; color: var(--gray-400); margin-top: 1px; }
+    .topbar-nurse {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--gray-600); margin-top: 3px;
+      cursor: pointer; text-decoration: none; border-bottom: 1px dashed var(--gray-300);
+      width: fit-content;
+    }
+    .topbar-nurse:hover { color: var(--blue-600); border-bottom-color: var(--blue-400); }
     .topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
     .btn {
@@ -458,6 +465,9 @@
       <div class="topbar-left">
         <h1 id="topbarTitle">Hôpital Maisonneuve-Rosemont</h1>
         <p>Urgences P4/P5 — <span id="topbarDate"></span></p>
+        <span class="topbar-nurse" onclick="openModal('nurse')" title="Changer d'infirmière">
+          👩‍⚕️ <span id="topbarNurseName">Marie-Laure T.</span>
+        </span>
       </div>
       <div class="topbar-actions">
         <button class="btn btn-nurse" onclick="openModal('nurse')">
@@ -826,6 +836,7 @@
     const initials = [first[0], last[0]].filter(Boolean).join('').toUpperCase() || '?';
     document.getElementById('nurseNameDisplay').textContent = full;
     document.getElementById('nurseAvatar').textContent = initials;
+    document.getElementById('topbarNurseName').textContent = full;
     if (first) document.getElementById('nurseFirstName').value = first;
     if (last)  document.getElementById('nurseLastName').value  = last;
   }
