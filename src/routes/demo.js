@@ -9,7 +9,7 @@ const db = require('../../config/database');
 const logger = require('../utils/logger');
 
 const DEMO_PATIENTS = [
-  { name: 'Marie Tremblay',  priority: 'P4', reason: 'Douleur abdominale légère',   minutesAgo: 90 },
+  { name: 'Marie Tremblay',  priority: 'P4', reason: 'Douleur abdominale légère',   minutesAgo: 90, phone: '15145771396' },
   { name: 'Jean Pelletier',  priority: 'P5', reason: 'Éruption cutanée bénigne',     minutesAgo: 75 },
   { name: 'Fatima Benali',   priority: 'P4', reason: 'Fièvre persistante modérée',   minutesAgo: 60 },
   { name: 'Roger Lavoie',    priority: 'P5', reason: 'Mal de dos chronique',          minutesAgo: 45 },
@@ -55,19 +55,20 @@ router.post('/reset', async (req, res) => {
         INSERT INTO patients (
           uuid, token, hospital_id, priority, reason,
           status, estimated_wait_minutes, position_in_queue,
-          activated_at, expires_at, created_at
+          activated_at, expires_at, created_at, phone
         ) VALUES (
           gen_random_uuid(), $1, $2, $3, $4,
           'waiting', $5, $6,
-          $7, $8, $7
+          $7, $8, $7, $9
         )
         ON CONFLICT (token) DO UPDATE SET
           priority = EXCLUDED.priority,
           reason = EXCLUDED.reason,
           estimated_wait_minutes = EXCLUDED.estimated_wait_minutes,
+          phone = EXCLUDED.phone,
           updated_at = CURRENT_TIMESTAMP
         RETURNING id, token, priority, reason, estimated_wait_minutes, status
-      `, [token, hospitalId, p.priority, p.reason, estimatedWait, i + 1, createdAt, expiresAt]);
+      `, [token, hospitalId, p.priority, p.reason, estimatedWait, i + 1, createdAt, expiresAt, p.phone || null]);
 
       inserted.push({ name: p.name, ...rows[0] });
     }
