@@ -214,7 +214,8 @@ router.post('/:id/notify',
         });
       }
       
-      // Envoyer SMS
+      // Envoyer SMS (phone override from body for testing)
+      if (req.body && req.body.phone) patient.phone = req.body.phone;
       const smsResult = await SmsService.sendNotification(patient);
       
       if (smsResult.success) {
