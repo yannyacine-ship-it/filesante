@@ -105,7 +105,7 @@
     .btn-nurse { background: var(--purple-50); color: var(--purple-600); border: 1.5px solid #DDD6FE; }
     .btn-nurse:hover { background: #EDE9FE; }
 
-    .content { padding: 24px 28px; flex: 1; overflow-y: auto; }
+    .content { padding: 24px 28px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
     /* ── KPI STRIP ── */
     .kpi-strip {
@@ -299,6 +299,7 @@
       padding: 32px; max-width: 440px; width: 100%;
       box-shadow: 0 20px 60px rgba(0,0,0,0.2);
       animation: modal-in 0.2s ease;
+      max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
     }
     @keyframes modal-in { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     .modal-icon {
@@ -402,10 +403,135 @@
     .toast-amber { background: var(--amber-400); }
     .toast-red   { background: var(--red-400); }
 
-    /* ── RESPONSIVE ── */
+    /* ══════════════════════════════════════════
+       RESPONSIVE — Tablette & Mobile
+    ══════════════════════════════════════════ */
+
+    /* ── TABLETTE (≤ 900px) ── */
     @media (max-width: 900px) {
       .sidebar { display: none; }
-      .kpi-strip { grid-template-columns: repeat(2,1fr); }
+
+      .topbar { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
+      .topbar-actions { gap: 6px; flex-wrap: wrap; }
+      /* Shorten button labels on tablet */
+      .btn-nurse   { display: none; }              /* duplicate — sidebar has it */
+      .btn-rapport span, .btn-scan span { display: none; }
+
+      .content { padding: 16px; }
+
+      .kpi-strip { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+      .kpi-value { font-size: 22px; }
+
+      /* Table: horizontal scroll */
+      .queue-section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      table { min-width: 700px; }
+
+      /* Civière section */
+      .civiere-section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .civiere-section table { min-width: 600px; }
+
+      /* Civière alert bar: stack on tablet */
+      .civiere-alert-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .civiere-alert-bar > div:last-child { width: 100%; display: flex; gap: 6px; flex-wrap: wrap; }
+
+      /* Call alert row: stack */
+      .call-alert-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+
+      .modal { padding: 24px; max-width: 100%; margin: 10px; }
+    }
+
+    /* ── MOBILE (≤ 600px) ── */
+    @media (max-width: 600px) {
+      .topbar { padding: 10px 14px; }
+      .topbar-left h1 { font-size: 14px; }
+      .topbar-left p  { font-size: 11px; }
+      .topbar-nurse   { font-size: 11px; }
+
+      /* Action buttons: icon + key action only */
+      .btn { padding: 8px 11px; font-size: 12px; gap: 5px; }
+      .btn-rapport { display: none; }            /* access via menu on phone */
+      .btn-nurse   { display: none; }
+      /* Keep surge + scan + add visible but compact */
+      .btn-surge::after   { content: ''; }
+      .btn-scan   > svg   { display: block; }
+
+      .content { padding: 12px; }
+
+      .kpi-strip { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+      .kpi-card  { padding: 14px 12px; }
+      .kpi-value { font-size: 20px; }
+      .kpi-label { font-size: 11px; }
+
+      /* Queue table → card layout on phone */
+      .queue-section table,
+      .queue-section thead,
+      .queue-section tbody,
+      .queue-section th,
+      .queue-section td,
+      .queue-section tr { display: block; }
+
+      .queue-section thead { display: none; }   /* hide column headers */
+
+      .queue-section tbody tr {
+        border: 1px solid var(--gray-100);
+        border-radius: 12px;
+        margin: 10px 0;
+        padding: 12px;
+        background: var(--white);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      }
+      .queue-section tbody td {
+        padding: 4px 0;
+        border: none;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      /* Hide Note and Code columns on phone — not critical at bedside */
+      .queue-section td:nth-child(5),
+      .queue-section td:nth-child(6) { display: none; }
+
+      /* Civière section: card layout */
+      .civiere-section table,
+      .civiere-section thead,
+      .civiere-section tbody,
+      .civiere-section th,
+      .civiere-section td,
+      .civiere-section tr { display: block; }
+      .civiere-section thead { display: none; }
+      .civiere-section tbody tr {
+        border: 1px solid var(--gray-100); border-radius: 12px;
+        margin: 10px 0; padding: 12px; background: var(--white);
+      }
+      .civiere-section tbody td { padding: 4px 0; border: none; display: flex; gap: 8px; align-items: center; }
+
+      /* Modals: full-screen on phone */
+      .modal-overlay { padding: 0; align-items: flex-end; }
+      .modal {
+        border-radius: 20px 20px 0 0;
+        padding: 24px 20px 32px;
+        max-width: 100%;
+        width: 100%;
+        max-height: 92vh;
+        overflow-y: auto;
+      }
+
+      /* Surge options: smaller */
+      .surge-options { gap: 6px; }
+      .surge-opt { padding: 14px 0; font-size: 16px; }
+
+      /* Call alert */
+      .call-tel-link { font-size: 13px; padding: 8px 14px; }
+      .btn-called    { padding: 8px 14px; font-size: 13px; }
+
+      /* Queue header: stack filter tabs */
+      .queue-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .filter-tabs  { flex-wrap: wrap; }
+      .filter-tab   { font-size: 11px; padding: 4px 10px; }
+
+      /* Civière header */
+      .civiere-header { flex-wrap: wrap; gap: 10px; }
     }
   </style>
 </head>
