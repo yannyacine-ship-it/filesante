@@ -205,6 +205,39 @@ const migrations = [
       -- Hospital surge delay config (stored in settings JSONB)
       -- hospitals.settings -> { sms_delay_60: 60, sms_delay_30: 30 }
     `
+  },
+  {
+    name: '003_civiere_and_manual_notify',
+    up: `
+      -- Rappel manuel (infirmière notifie un patient qui n'est pas le prochain)
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS manually_notified BOOLEAN DEFAULT false;
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS manually_notified_at TIMESTAMP WITH TIME ZONE;
+      ALTER TABLE patients ADD COLUMN IF NOT EXISTS nurse_note TEXT;
+
+      -- Table civières (patients physiquement à l'urgence sur civière)
+      CREATE TABLE IF NOT EXISTS civieres (
+        id SERIAL PRIMARY KEY,
+        hospital_id INTEGER REFERENCES hospitals(id) NOT NULL,
+        patient_name VARCHAR(255) NOT NULL,
+        numero INTEGER NOT NULL CHECK (numero BETWEEN 1 AND 20),
+        reason VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'en_attente_resultats'
+          CHECK (status IN ('en_attente_resultats','resultats_signales','decision_en_cours','liberee')),
+        alert_dismissed BOOLEAN DEFAULT false,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        results_flagged_at TIMESTAMP WITH TIME ZONE,
+        decision_at TIMESTAMP WITH TIME ZONE,
+        liberated_at TIMESTAMP WITH TIME ZONE,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_civieres_hospital ON civieres(hospital_id, status);
+
+      DROP TRIGGER IF EXISTS update_civieres_updated_at ON civieres;
+      CREATE TRIGGER update_civieres_updated_at
+        BEFORE UPDATE ON civieres
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    `
   }
 ];
 
