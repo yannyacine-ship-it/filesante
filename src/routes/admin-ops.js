@@ -45,6 +45,22 @@ router.post('/seed', async (req, res) => {
 });
 
 /**
+ * POST /api/admin/migrate
+ * Exécute les migrations manquantes sans supprimer les données
+ */
+router.post('/migrate', async (req, res) => {
+  try {
+    logger.info('🔄 Exécution des migrations via API...');
+    const { runMigrations } = require('../../migrations/run');
+    await runMigrations();
+    res.json({ success: true, message: 'Migrations exécutées avec succès' });
+  } catch (error) {
+    logger.error('❌ Erreur migration:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * POST /api/admin/reset-database
  * ⚠️ DANGER: Réinitialise complètement la base de données
  * ⚠️ UTILISER AVEC PRUDENCE - Supprime TOUTES les données
@@ -55,13 +71,10 @@ router.post('/reset-database', async (req, res) => {
 
     const db = require('../../config/database');
 
-    // Supprimer toutes les tables et les recréer
-    await db.query(`
-      DROP TABLE IF EXISTS patients CASCADE;
-      DROP TABLE IF EXISTS daily_stats CASCADE;
-      DROP TABLE IF EXISTS users CASCADE;
-      DROP TABLE IF EXISTS hospitals CASCADE;
-    `);
+    // Supprimer toutes les tables (y compris migrations) séparément
+    for (const table of ['patients', 'sms_notifications', 'activity_logs', 'daily_stats', 'users', 'hospitals', 'migrations']) {
+      await db.query(`DROP TABLE IF EXISTS ${table} CASCADE`);
+    }
 
     logger.info('Tables supprimées, réexécution des migrations...');
 
