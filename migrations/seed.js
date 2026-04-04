@@ -14,6 +14,10 @@ async function seed() {
   logger.info('Démarrage du seeding...');
 
   try {
+    // Toujours s'assurer que les migrations sont à jour avant de seeder
+    const { runMigrations } = require('./run');
+    await runMigrations();
+
     // Insérer les hôpitaux
     logger.info('Insertion des hôpitaux...');
 
