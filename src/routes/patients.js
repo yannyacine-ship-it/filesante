@@ -117,17 +117,36 @@ router.post('/:token/activate',
       
     } catch (error) {
       logger.error('Erreur activation patient', error);
-      
-      if (error.message.includes('non trouvé')) {
-        return res.status(404).json({ 
-          success: false, 
-          error: 'Patient non trouvé ou déjà activé' 
+
+      // Already activated — return current status so patient.html can skip registration
+      if (error.message && error.message.includes('non trouvé ou déjà activé')) {
+        try {
+          const existing = await Patient.getByToken(req.params.token);
+          if (existing && existing.status !== 'pending') {
+            return res.json({
+              success: true,
+              alreadyActivated: true,
+              data: {
+                id: existing.id,
+                status: existing.status,
+                priority: existing.priority,
+                estimatedWait: existing.estimated_wait_minutes,
+                position: existing.position_in_queue,
+                token: existing.token,
+                activatedAt: existing.activated_at
+              }
+            });
+          }
+        } catch (_) {}
+        return res.status(404).json({
+          success: false,
+          error: 'Patient non trouvé'
         });
       }
-      
-      res.status(500).json({ 
-        success: false, 
-        error: 'Erreur lors de l\'activation' 
+
+      res.status(500).json({
+        success: false,
+        error: 'Erreur lors de l\'activation'
       });
     }
   }

@@ -192,20 +192,46 @@
 
 <main>
 
-  <!-- ═══ ÉTAT 0 : ACTIVATION — ENTRER NUMÉRO DE TÉLÉPHONE ═══ -->
+  <!-- ═══ PAS DE TOKEN ═══ -->
+  <div class="view" id="view-no-token">
+    <div class="status-card">
+      <div class="state-icon blue">📷</div>
+      <div class="status-headline" style="margin-bottom:12px;">Scannez le QR code</div>
+      <div class="status-sub">Veuillez scanner le QR code fourni par l'infirmière au triage pour accéder à votre file d'attente virtuelle.</div>
+    </div>
+    <div class="info-card">
+      <div class="info-icon">ℹ️</div>
+      <div>
+        <div class="info-title">Comment ça fonctionne</div>
+        <div class="info-desc">L'infirmière vous remet un QR code au triage. Scannez-le avec votre téléphone pour rejoindre la file et recevoir vos notifications par SMS.</div>
+      </div>
+    </div>
+    <div class="privacy-note">
+      FileSanté — Urgences P4/P5 · Données protégées (Loi 25 Québec)
+    </div>
+  </div>
+
+  <!-- ═══ ÉTAT 0 : INSCRIPTION — ENTRER NUMÉRO DE TÉLÉPHONE ═══ -->
   <div class="view" id="view-activate">
     <div class="phone-form-card">
       <div class="state-icon blue" style="margin-bottom:16px;">📱</div>
-      <h2 style="font-size:20px;font-family:'DM Serif Display',Georgia,serif;color:var(--gray-900);margin-bottom:8px;text-align:center;">Confirmer votre inscription</h2>
+      <h2 style="font-size:20px;font-family:'DM Serif Display',Georgia,serif;color:var(--gray-900);margin-bottom:8px;text-align:center;">Confirmer et rejoindre la file</h2>
       <p style="font-size:14px;color:var(--gray-400);text-align:center;margin-bottom:24px;line-height:1.6;">
-        Entrez votre numéro de téléphone pour recevoir vos notifications par SMS.
+        Entrez votre numéro pour recevoir vos notifications par SMS lorsque votre tour approche.
       </p>
       <label class="phone-label" for="phoneInput">Numéro de téléphone *</label>
       <input class="phone-input" type="tel" id="phoneInput"
         placeholder="5141234567"
         inputmode="numeric"
         oninput="onPhoneInput(this)">
-      <div class="phone-error-msg" id="phoneErrorMsg">Numéro requis pour recevoir vos notifications</div>
+      <div class="phone-error-msg" id="phoneErrorMsg">Numéro invalide — minimum 10 chiffres</div>
+
+      <label style="display:flex;align-items:flex-start;gap:10px;margin-top:20px;cursor:pointer;font-size:13px;color:var(--gray-700);line-height:1.5;">
+        <input type="checkbox" id="consentCheck" onchange="onConsentChange()"
+          style="margin-top:2px;width:18px;height:18px;flex-shrink:0;accent-color:var(--blue-600);">
+        J'accepte de recevoir des SMS de FileSanté pour les notifications liées à ma visite aux urgences.
+      </label>
+
       <button class="btn-activate" id="btnActivate" onclick="activatePatient()" disabled>
         Confirmer et rejoindre la file
       </button>
@@ -214,7 +240,7 @@
       <div class="info-icon">🔔</div>
       <div>
         <div class="info-title">Notifications SMS incluses</div>
-        <div class="info-desc">Vous recevrez un SMS 60 min avant votre tour, puis un second pour partir. Minimum 10 chiffres.</div>
+        <div class="info-desc">Vous recevrez un SMS lorsque votre tour approche, puis un second pour partir. Minimum 10 chiffres.</div>
       </div>
     </div>
     <div class="privacy-note">
@@ -223,7 +249,7 @@
   </div>
 
   <!-- ═══ ÉTAT 1 : EN ATTENTE ═══ -->
-  <div class="view active" id="view-waiting">
+  <div class="view" id="view-waiting">
     <div class="status-card">
       <div class="state-icon blue">🏠</div>
       <div class="status-pill pill-blue">
@@ -348,103 +374,124 @@
   };
 
   const params = new URLSearchParams(location.search);
-  const token = params.get('token');
-  const h = params.get('h') || 'HMR';
+  const token  = params.get('token');
+  const h      = params.get('h') || 'HMR';
   if (HOSPITALS[h]) document.getElementById('hospitalName').textContent = HOSPITALS[h];
 
-  // ── State management ──
-  const HEADER_CLASSES = { activate: 'state-waiting', waiting: 'state-waiting', soon: 'state-soon', depart: 'state-depart' };
+  // ── State machine ──
+  const HEADER_CLASSES = {
+    'no-token': 'state-waiting',
+    activate:   'state-waiting',
+    waiting:    'state-waiting',
+    soon:       'state-soon',
+    depart:     'state-depart'
+  };
 
   function showState(state, btn) {
-    // Views
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById('view-' + state).classList.add('active');
+    const el = document.getElementById('view-' + state);
+    if (el) el.classList.add('active');
 
-    // Header color
-    const hdr = document.getElementById('headerEl');
-    hdr.className = 'header ' + (HEADER_CLASSES[state] || 'state-waiting');
+    document.getElementById('headerEl').className =
+      'header ' + (HEADER_CLASSES[state] || 'state-waiting');
 
-    // Demo bar
     if (btn) {
       document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
     }
 
-    // Set code for depart state
     if (state === 'depart') {
       const code = token || params.get('code') || '????';
       document.getElementById('departCode').textContent = code.toUpperCase();
     }
   }
 
-  // ── Phone activation (Feature 4 - SMS mode) ──
+  // ── Form validation ──
+  function validateForm() {
+    const phone   = (document.getElementById('phoneInput').value || '').replace(/\D/g, '');
+    const consent = document.getElementById('consentCheck').checked;
+    document.getElementById('btnActivate').disabled = !(phone.length >= 10 && consent);
+  }
+
   function onPhoneInput(el) {
     const digits = el.value.replace(/\D/g, '');
     el.value = digits;
-    const btn = document.getElementById('btnActivate');
     const err = document.getElementById('phoneErrorMsg');
-    if (digits.length >= 10) {
+    if (digits.length > 0 && digits.length < 10) {
+      el.classList.add('error');
+      err.classList.add('show');
+    } else {
       el.classList.remove('error');
       err.classList.remove('show');
-      btn.disabled = false;
-    } else {
-      if (digits.length > 0) {
-        el.classList.add('error');
-        err.classList.add('show');
-      }
-      btn.disabled = true;
     }
+    validateForm();
   }
 
+  function onConsentChange() {
+    validateForm();
+  }
+
+  // ── Activate ──
   async function activatePatient() {
-    const phone = document.getElementById('phoneInput').value.replace(/\D/g, '');
-    if (phone.length < 10) {
-      document.getElementById('phoneInput').classList.add('error');
-      document.getElementById('phoneErrorMsg').classList.add('show');
-      return;
-    }
+    const phone   = document.getElementById('phoneInput').value.replace(/\D/g, '');
+    const consent = document.getElementById('consentCheck').checked;
+    if (phone.length < 10 || !consent) return;
+
     const btn = document.getElementById('btnActivate');
     btn.disabled = true;
-    btn.textContent = 'Confirmation en cours...';
+    btn.textContent = 'Confirmation en cours…';
+
     try {
-      if (token) {
-        const resp = await fetch('/api/patients/' + token + '/activate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone })
-        });
-        if (resp.ok) {
-          showState('waiting');
-          return;
-        }
+      const resp = await fetch('/api/patients/' + token + '/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      });
+      const json = await resp.json();
+
+      if (json.success) {
+        // New activation OR already-waiting — go to appropriate status screen
+        applyStatus(json.data?.status || 'waiting', json.data?.token || token);
+        return;
       }
     } catch (_) {}
-    // Demo: just proceed
+
+    // Fallback for network issues — show waiting screen anyway
     showState('waiting');
+  }
+
+  // ── Map API status → view ──
+  function applyStatus(status, patientToken) {
+    if (status === 'pending') {
+      showState('activate');
+    } else if (status === 'waiting') {
+      showState('waiting');
+    } else if (status === 'notified') {
+      showState('depart');
+      document.getElementById('departCode').textContent =
+        (patientToken || token || '').toUpperCase();
+    } else if (status === 'returned' || status === 'non_confirme') {
+      showState('depart');
+      document.getElementById('confirmedBox').style.display = 'block';
+      const btnC = document.getElementById('btnConfirm');
+      if (btnC) btnC.style.display = 'none';
+    }
   }
 
   // ── Confirm arrival ──
   async function confirmArrival() {
     const btn = document.getElementById('btnConfirm');
     btn.disabled = true;
-    btn.textContent = 'Confirmation en cours...';
-
+    btn.textContent = 'Confirmation en cours…';
     try {
-      // Find patient id from token if available
-      // In demo mode, just show success UI
-      if (token) {
-        const idParam = params.get('pid');
-        if (idParam) {
-          await fetch('/api/patients/' + idParam + '/confirm', { method: 'POST' });
-        }
-      }
+      const idParam = params.get('pid');
+      if (idParam) await fetch('/api/patients/' + idParam + '/confirm', { method: 'POST' });
     } catch (_) {}
-
     document.getElementById('confirmedBox').style.display = 'block';
     btn.style.display = 'none';
   }
 
-  // ── Live polling (when token is present) ──
+  // ── Live polling ──
   async function pollStatus() {
     if (!token) return;
     try {
@@ -452,26 +499,32 @@
       if (!resp.ok) return;
       const { data } = await resp.json();
       if (!data) return;
-
-      if (data.status === 'pending') {
-        showState('activate');
-      } else if (data.status === 'waiting') {
-        showState('waiting');
-      } else if (data.status === 'notified') {
-        showState('depart');
-        document.getElementById('departCode').textContent = (data.token || '').toUpperCase();
-      } else if (data.status === 'returned') {
-        document.getElementById('confirmedBox').style.display = 'block';
-        document.getElementById('btnConfirm').style.display = 'none';
-      }
+      applyStatus(data.status, data.token);
     } catch (_) {}
   }
 
-  // If token param present, show activate view first, then poll
-  if (token) {
-    showState('activate');
-    pollStatus();
-    setInterval(pollStatus, 60000);
+  // ── Boot ──
+  if (!token) {
+    // No token in URL → show scan instruction
+    showState('no-token');
+  } else {
+    // Token present → query API first, then decide
+    (async () => {
+      try {
+        const resp = await fetch('/api/patients/' + token);
+        if (resp.ok) {
+          const { data } = await resp.json();
+          if (data) {
+            applyStatus(data.status, data.token);
+            // Start polling for live status updates
+            setInterval(pollStatus, 30000);
+            return;
+          }
+        }
+      } catch (_) {}
+      // If API fails or patient not found, show registration screen
+      showState('activate');
+    })();
   }
 </script>
 </body>

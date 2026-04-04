@@ -51,24 +51,27 @@ router.post('/reset', async (req, res) => {
       const estimatedWait = baseWait + i * 15;
       const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000);
 
+      // Insert as 'pending' — patient must scan QR and enter phone to activate
       const { rows } = await db.query(`
         INSERT INTO patients (
           uuid, token, hospital_id, priority, reason,
           status, estimated_wait_minutes, position_in_queue,
-          activated_at, expires_at, created_at, phone
+          expires_at, created_at
         ) VALUES (
           gen_random_uuid(), $1, $2, $3, $4,
-          'waiting', $5, $6,
-          $7, $8, $7, $9
+          'pending', $5, $6,
+          $7, $8
         )
         ON CONFLICT (token) DO UPDATE SET
           priority = EXCLUDED.priority,
           reason = EXCLUDED.reason,
+          status = 'pending',
           estimated_wait_minutes = EXCLUDED.estimated_wait_minutes,
-          phone = EXCLUDED.phone,
+          phone = NULL,
+          activated_at = NULL,
           updated_at = CURRENT_TIMESTAMP
         RETURNING id, token, priority, reason, estimated_wait_minutes, status
-      `, [token, hospitalId, p.priority, p.reason, estimatedWait, i + 1, createdAt, expiresAt, p.phone || null]);
+      `, [token, hospitalId, p.priority, p.reason, estimatedWait, i + 1, expiresAt, createdAt]);
 
       inserted.push({ name: p.name, ...rows[0] });
     }
