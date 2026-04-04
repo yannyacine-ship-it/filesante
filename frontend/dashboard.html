@@ -404,134 +404,217 @@
     .toast-red   { background: var(--red-400); }
 
     /* ══════════════════════════════════════════
-       RESPONSIVE — Tablette & Mobile
+       RESPONSIVE — Tablette (≤ 900px) & Mobile (≤ 768px)
     ══════════════════════════════════════════ */
+
+    /* ── All buttons: 44px min touch target ── */
+    .btn        { min-height: 44px; }
+    .action-btn { min-height: 44px; padding: 0 14px; }
+    .filter-tab { min-height: 36px; }
+    .surge-opt  { min-height: 64px; }
+    .btn-called, .call-tel-link { min-height: 44px; display: inline-flex; align-items: center; }
 
     /* ── TABLETTE (≤ 900px) ── */
     @media (max-width: 900px) {
       .sidebar { display: none; }
-
-      .topbar { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
+      .topbar  { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
       .topbar-actions { gap: 6px; flex-wrap: wrap; }
-      /* Shorten button labels on tablet */
-      .btn-nurse   { display: none; }              /* duplicate — sidebar has it */
-      .btn-rapport span, .btn-scan span { display: none; }
-
+      .btn-nurse { display: none; }
       .content { padding: 16px; }
-
       .kpi-strip { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
       .kpi-value { font-size: 22px; }
-
-      /* Table: horizontal scroll */
-      .queue-section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-      table { min-width: 700px; }
-
-      /* Civière section */
+      /* Tables: horizontal scroll on tablet */
+      .queue-section   { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .queue-section table { min-width: 680px; }
       .civiere-section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-      .civiere-section table { min-width: 600px; }
-
-      /* Civière alert bar: stack on tablet */
+      .civiere-section table { min-width: 580px; }
+      /* Stack civière alert */
       .civiere-alert-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
-      .civiere-alert-bar > div:last-child { width: 100%; display: flex; gap: 6px; flex-wrap: wrap; }
-
-      /* Call alert row: stack */
+      .civiere-alert-bar > div:last-child { width: 100%; display: flex; flex-wrap: wrap; gap: 6px; }
       .call-alert-row { flex-direction: column; align-items: flex-start; gap: 8px; }
-
-      .modal { padding: 24px; max-width: 100%; margin: 10px; }
+      .modal { padding: 24px; }
     }
 
-    /* ── MOBILE (≤ 600px) ── */
-    @media (max-width: 600px) {
-      .topbar { padding: 10px 14px; }
-      .topbar-left h1 { font-size: 14px; }
-      .topbar-left p  { font-size: 11px; }
-      .topbar-nurse   { font-size: 11px; }
+    /* ── MOBILE (≤ 768px) ── */
+    @media (max-width: 768px) {
 
-      /* Action buttons: icon + key action only */
-      .btn { padding: 8px 11px; font-size: 12px; gap: 5px; }
-      .btn-rapport { display: none; }            /* access via menu on phone */
-      .btn-nurse   { display: none; }
-      /* Keep surge + scan + add visible but compact */
-      .btn-surge::after   { content: ''; }
-      .btn-scan   > svg   { display: block; }
+      /* 1. TOPBAR — stack vertically */
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 12px 14px;
+        gap: 10px;
+      }
+      .topbar-left h1   { font-size: 15px; }
+      .topbar-left p    { font-size: 11px; }
+      .topbar-nurse     { font-size: 11px; margin-top: 2px; }
 
+      /* Header buttons: vertical stack, full width */
+      .topbar-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+      }
+      .topbar-actions .btn {
+        width: 100%;
+        justify-content: center;
+        min-height: 44px;
+        font-size: 14px;
+      }
+      .btn-nurse { display: none; } /* shown as nurse name tap */
+
+      /* 2. STATS CARDS — single column, stacked vertically */
       .content { padding: 12px; }
+      .kpi-strip {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .kpi-card  { padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
+      .kpi-value { font-size: 28px; margin-bottom: 0; flex-shrink: 0; }
+      .kpi-label { font-size: 12px; margin-bottom: 2px; }
+      .kpi-badge { margin-top: 0; }
 
-      .kpi-strip { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
-      .kpi-card  { padding: 14px 12px; }
-      .kpi-value { font-size: 20px; }
-      .kpi-label { font-size: 11px; }
+      /* 3. QUEUE TABLE → PATIENT CARDS */
+      .queue-section { overflow-x: visible; }
+      .queue-header  { flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px; }
+      .filter-tabs   { width: 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+      .filter-tab    { flex: 1; min-width: 80px; text-align: center; min-height: 36px; }
 
-      /* Queue table → card layout on phone */
+      /* Hide table structure, show as cards */
       .queue-section table,
       .queue-section thead,
       .queue-section tbody,
       .queue-section th,
       .queue-section td,
-      .queue-section tr { display: block; }
+      .queue-section tr { display: block; width: 100%; }
 
-      .queue-section thead { display: none; }   /* hide column headers */
+      .queue-section thead { display: none; }
 
       .queue-section tbody tr {
-        border: 1px solid var(--gray-100);
-        border-radius: 12px;
-        margin: 10px 0;
-        padding: 12px;
         background: var(--white);
-        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        border: 1px solid var(--gray-100);
+        border-radius: 14px;
+        margin: 10px 0;
+        padding: 14px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
       }
-      .queue-section tbody td {
-        padding: 4px 0;
-        border: none;
-        font-size: 13px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
+      .queue-section tbody tr.row-non-confirme {
+        background: #FEF2F2;
+        border-color: #FECACA;
       }
-      /* Hide Note and Code columns on phone — not critical at bedside */
-      .queue-section td:nth-child(5),
+
+      /* td:1 — Patient name + reason: full-width header of card */
+      .queue-section td:nth-child(1) {
+        padding: 0 0 10px 0;
+        border-bottom: 1px solid var(--gray-100);
+        margin-bottom: 10px;
+      }
+      .patient-id  { font-size: 15px; }
+      .patient-sub { font-size: 12px; margin-top: 2px; }
+
+      /* td:2 (priority) + td:4 (status) — inline on same row */
+      .queue-section td:nth-child(2),
+      .queue-section td:nth-child(4) {
+        display: inline-block;
+        padding: 0;
+        width: auto;
+        vertical-align: middle;
+      }
+      .queue-section td:nth-child(2) { margin-right: 8px; }
+
+      /* td:3 (time) — small, inline after status */
+      .queue-section td:nth-child(3) {
+        display: inline-block;
+        width: auto;
+        padding: 0 0 0 8px;
+        font-size: 11px;
+        color: var(--gray-400);
+        vertical-align: middle;
+      }
+
+      /* Wrap priority+status+time row */
+      .queue-section td:nth-child(2) { margin-top: 0; }
+      .queue-section td:nth-child(3)::after { content: ''; display: block; }
+
+      /* td:5 (note) — hide on mobile */
+      .queue-section td:nth-child(5) { display: none; }
+
+      /* td:6 (code) — hide on mobile */
       .queue-section td:nth-child(6) { display: none; }
 
-      /* Civière section: card layout */
+      /* td:7 (actions) — full-width button row */
+      .queue-section td:nth-child(7) {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px 0 0 0;
+        margin-top: 10px;
+        border-top: 1px solid var(--gray-100);
+        width: 100%;
+      }
+      .queue-section td:nth-child(7) .action-btn {
+        flex: 1;
+        min-width: 100px;
+        text-align: center;
+        justify-content: center;
+        min-height: 44px;
+        font-size: 13px;
+      }
+
+      /* 4. MODALS — sheet from bottom, scrollable */
+      .modal-overlay { padding: 0; align-items: flex-end; }
+      .modal {
+        border-radius: 20px 20px 0 0;
+        padding: 24px 20px 36px;
+        max-width: 100%;
+        width: 100%;
+        max-height: 88vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .modal-actions { flex-direction: column; gap: 8px; }
+      .modal-actions .btn { width: 100%; justify-content: center; min-height: 48px; font-size: 15px; }
+      .surge-options { gap: 8px; }
+      .surge-opt { padding: 16px 0; font-size: 17px; }
+      .notif-toggle-btn { min-height: 44px; }
+
+      /* 5. CIVIÈRE section */
+      .civiere-header { flex-wrap: wrap; gap: 10px; }
+      .civiere-section { overflow-x: visible; }
       .civiere-section table,
       .civiere-section thead,
       .civiere-section tbody,
       .civiere-section th,
       .civiere-section td,
-      .civiere-section tr { display: block; }
+      .civiere-section tr { display: block; width: 100%; }
       .civiere-section thead { display: none; }
       .civiere-section tbody tr {
-        border: 1px solid var(--gray-100); border-radius: 12px;
-        margin: 10px 0; padding: 12px; background: var(--white);
+        background: var(--white); border: 1px solid var(--gray-100);
+        border-radius: 14px; margin: 10px 0; padding: 14px;
       }
-      .civiere-section tbody td { padding: 4px 0; border: none; display: flex; gap: 8px; align-items: center; }
-
-      /* Modals: full-screen on phone */
-      .modal-overlay { padding: 0; align-items: flex-end; }
-      .modal {
-        border-radius: 20px 20px 0 0;
-        padding: 24px 20px 32px;
-        max-width: 100%;
-        width: 100%;
-        max-height: 92vh;
-        overflow-y: auto;
+      .civiere-section tbody td { padding: 4px 0; border: none; }
+      .civiere-section td:nth-child(6) { /* action button */
+        margin-top: 10px; border-top: 1px solid var(--gray-100); padding-top: 10px;
+      }
+      .civiere-section td:nth-child(6) .action-btn {
+        width: 100%; text-align: center; min-height: 44px; justify-content: center;
       }
 
-      /* Surge options: smaller */
-      .surge-options { gap: 6px; }
-      .surge-opt { padding: 14px 0; font-size: 16px; }
+      /* Call alerts */
+      .call-alert-row { flex-direction: column; align-items: stretch; gap: 10px; }
+      .call-tel-link  { justify-content: center; }
+      .btn-called     { width: 100%; text-align: center; }
 
-      /* Call alert */
-      .call-tel-link { font-size: 13px; padding: 8px 14px; }
-      .btn-called    { padding: 8px 14px; font-size: 13px; }
+      /* Civière alert bar */
+      .civiere-alert-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .civiere-alert-bar > div:last-child { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+      .btn-civiere-liberee { width: 100%; text-align: center; min-height: 44px; }
 
-      /* Queue header: stack filter tabs */
-      .queue-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-      .filter-tabs  { flex-wrap: wrap; }
-      .filter-tab   { font-size: 11px; padding: 4px 10px; }
-
-      /* Civière header */
-      .civiere-header { flex-wrap: wrap; gap: 10px; }
+      /* Toast */
+      .toast { width: calc(100% - 32px); left: 16px; transform: translateX(0) translateY(80px); white-space: normal; text-align: center; border-radius: 14px; }
+      .toast.show { transform: translateX(0) translateY(0); }
     }
   </style>
 </head>
