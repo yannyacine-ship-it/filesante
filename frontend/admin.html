@@ -170,7 +170,7 @@
     <div class="content">
 
       <!-- GLOBAL STRIP -->
-      <div class="global-strip">
+      <div class="global-strip" style="grid-template-columns:repeat(5,1fr);">
         <div class="stat-card">
           <div class="stat-value" id="gTotal">—</div>
           <div class="stat-label">Patients en file (tous hôpitaux)</div>
@@ -190,6 +190,11 @@
           <div class="stat-value" id="gAvgWait">—</div>
           <div class="stat-label">Temps d'attente moyen global</div>
           <div class="stat-badge badge-amber">min</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="gCivieres">—</div>
+          <div class="stat-label">Civières occupées (tous hôpitaux)</div>
+          <div class="stat-badge" id="gCivieresBadge" style="background:var(--teal-50);color:var(--teal-600);">Taux occupation</div>
         </div>
       </div>
 
@@ -215,10 +220,10 @@
 
   // Demo / fallback data when backend is unavailable
   const DEMO_HOSPITALS = [
-    { code: 'HMR', name: 'Hôpital Maisonneuve-Rosemont', isActive: true, queueCount: 12, notifiedCount: 3, lwbs: 2, returnedToday: 8, avgWaitMinutes: 127 },
-    { code: 'HND', name: 'Hôpital Notre-Dame',           isActive: true, queueCount: 7,  notifiedCount: 1, lwbs: 1, returnedToday: 5, avgWaitMinutes: 95 },
-    { code: 'HSC', name: 'Hôpital du Sacré-Cœur',        isActive: true, queueCount: 15, notifiedCount: 4, lwbs: 3, returnedToday: 11, avgWaitMinutes: 145 },
-    { code: 'HGM', name: 'Hôpital Général de Montréal',  isActive: true, queueCount: 9,  notifiedCount: 2, lwbs: 0, returnedToday: 6, avgWaitMinutes: 110 }
+    { code: 'HMR', name: 'Hôpital Maisonneuve-Rosemont', isActive: true, queueCount: 12, notifiedCount: 3, lwbs: 2, returnedToday: 8, avgWaitMinutes: 127, activeCivieres: 3, civieresToday: 5, avgCiviereOccupationMin: 142, avgResultsLiberationMin: 38 },
+    { code: 'HND', name: 'Hôpital Notre-Dame',           isActive: true, queueCount: 7,  notifiedCount: 1, lwbs: 1, returnedToday: 5, avgWaitMinutes: 95,  activeCivieres: 1, civieresToday: 2, avgCiviereOccupationMin: 95,  avgResultsLiberationMin: 22 },
+    { code: 'HSC', name: 'Hôpital du Sacré-Cœur',        isActive: true, queueCount: 15, notifiedCount: 4, lwbs: 3, returnedToday: 11, avgWaitMinutes: 145, activeCivieres: 5, civieresToday: 8, avgCiviereOccupationMin: 168, avgResultsLiberationMin: 45 },
+    { code: 'HGM', name: 'Hôpital Général de Montréal',  isActive: true, queueCount: 9,  notifiedCount: 2, lwbs: 0, returnedToday: 6, avgWaitMinutes: 110,  activeCivieres: 2, civieresToday: 3, avgCiviereOccupationMin: 120, avgResultsLiberationMin: 30 }
   ];
 
   const DEMO_HOURLY = Array.from({ length: 12 }, (_, i) => ({
@@ -255,17 +260,36 @@
   }
 
   function renderGlobal(hospitals) {
-    const total = hospitals.reduce((s, h) => s + h.queueCount, 0);
-    const returned = hospitals.reduce((s, h) => s + h.returnedToday, 0);
-    const lwbs = hospitals.reduce((s, h) => s + h.lwbs, 0);
-    const avgWait = hospitals.length
-      ? Math.round(hospitals.reduce((s, h) => s + h.avgWaitMinutes, 0) / hospitals.length)
+    const total      = hospitals.reduce((s, h) => s + h.queueCount, 0);
+    const returned   = hospitals.reduce((s, h) => s + h.returnedToday, 0);
+    const lwbs       = hospitals.reduce((s, h) => s + h.lwbs, 0);
+    const activeCivieres = hospitals.reduce((s, h) => s + (h.activeCivieres || 0), 0);
+    const activeWithCivieres = hospitals.filter(h => (h.activeCivieres || 0) > 0).length;
+
+    // Weighted avg wait (only for hospitals with active patients)
+    const hospitalsWithQueue = hospitals.filter(h => h.queueCount > 0 && h.avgWaitMinutes > 0);
+    const avgWait = hospitalsWithQueue.length
+      ? Math.round(hospitalsWithQueue.reduce((s, h) => s + h.avgWaitMinutes, 0) / hospitalsWithQueue.length)
       : 0;
 
-    document.getElementById('gTotal').textContent = total;
+    document.getElementById('gTotal').textContent    = total;
     document.getElementById('gReturned').textContent = returned;
-    document.getElementById('gLwbs').textContent = lwbs;
-    document.getElementById('gAvgWait').textContent = avgWait + ' min';
+    document.getElementById('gLwbs').textContent     = lwbs;
+    document.getElementById('gAvgWait').textContent  = avgWait > 0 ? avgWait + ' min' : '—';
+
+    // Civière KPI
+    const maxCivieres = hospitals.length * 20; // 20 civières per hospital
+    const occupancyPct = maxCivieres > 0 ? Math.round(activeCivieres / maxCivieres * 100) : 0;
+    document.getElementById('gCivieres').textContent = activeCivieres;
+    const badge = document.getElementById('gCivieresBadge');
+    badge.textContent = occupancyPct + '% occupation';
+    if (occupancyPct >= 50) {
+      badge.style.background = '#FEF2F2'; badge.style.color = '#DC2626';
+    } else if (occupancyPct >= 25) {
+      badge.style.background = '#FFF8E6'; badge.style.color = '#B45309';
+    } else {
+      badge.style.background = '#E0F8F4'; badge.style.color = '#0F7A68';
+    }
   }
 
   function renderHospitals(hospitals) {
@@ -293,8 +317,9 @@
             </div>
           </div>
           <div style="margin-top:12px;font-size:12px;color:var(--gray-400);">
-            Attente moy. <strong style="color:var(--gray-700);">${h.avgWaitMinutes} min</strong>
+            Attente moy. <strong style="color:var(--gray-700);">${h.avgWaitMinutes > 0 ? h.avgWaitMinutes + ' min' : '—'}</strong>
             · ${h.notifiedCount} en route
+            ${(h.activeCivieres||0) > 0 ? `· <strong style="color:var(--teal-600);">🛏 ${h.activeCivieres} civière${h.activeCivieres>1?'s':''}</strong>` : ''}
           </div>
           <div class="h-wait-bar">
             <div class="h-wait-fill" style="width:${waitPct}%;background:${barColor};"></div>

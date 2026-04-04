@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(curl -s http://localhost:3000/health)",
+      "Bash(git push:*)",
+      "Bash(curl -s -X POST http://localhost:3000/api/demo/reset -H \"Content-Type: application/json\")",
+      "Bash(python -m json.tool)",
+      "Bash(docker --version)",
+      "Bash(docker compose:*)",
+      "Bash(where psql:*)",
+      "Bash(pg_config --version)",
+      "Bash(where pg_ctl)",
+      "Bash(curl -s http://localhost:3000/api/hospitals/HMR/queue)",
+      "Bash(curl -s http://localhost:3000/api/hospitals/all/admin-stats)",
+      "Bash(node -e \"const db = require\\('./config/database'\\); db.query\\('SELECT 1'\\).catch\\(e => console.log\\('ERR type:', e.constructor.name, '| code:', e.code, '| msg:', e.message\\)\\)\")",
+      "Bash(ls -la /c/Users/Administrator/filesante/.env*)",
+      "Bash(node:*)",
+      "Bash(railway logs:*)",
+      "Bash(railway link:*)",
+      "Bash(railway whoami:*)",
+      "Bash(railway list:*)",
+      "Bash(railway service:*)",
+      "Bash(railway status:*)",
+      "Bash(railway ps:*)",
+      "Bash(railway:*)",
+      "Bash(curl -s -X POST https://filesante-api-production-caf7.up.railway.app/api/demo/reset -H 'Content-Type: application/json')",
+      "Bash(curl -s -X POST https://filesante-api-production-caf7.up.railway.app/api/admin/reset-database -H 'Content-Type: application/json')",
+      "Bash(curl -s -X POST https://filesante-api-production.up.railway.app/api/admin/migrate)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl:*)"
+    ]
+  }
+}

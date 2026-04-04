@@ -110,22 +110,26 @@ app.get('/api/hospitals-list', (req, res) => {
   res.json({ success: true, data: hospitals });
 });
 
-// ── PDF SHIFT REPORT (Feature 8) ──
+// ── PDF SHIFT REPORT ──
 app.get('/api/hospitals/:code/report', async (req, res) => {
   const { code } = req.params;
+  const nurseName = req.query.nurse ? decodeURIComponent(req.query.nurse) : null;
+
   try {
     const PDFDocument = require('pdfkit');
     const db = require('../config/database');
 
-    // Fetch stats
-    let stats = { returned: 0, noshow: 0, non_confirme: 0, avg_wait: 0, peak_hour: null, total: 0 };
-    let hourly = [];
+    let stats = { returned: 0, noshow: 0, total: 0, avg_wait: 0, peak_hour: null, manually_notified: 0 };
+    let civiereStats = { total: 0, avg_occupation: null, avg_results_liberation: null };
+
     try {
       const { rows } = await db.query(`
         SELECT
           COUNT(*) FILTER (WHERE status = 'returned') as returned,
           COUNT(*) FILTER (WHERE status IN ('noshow','non_confirme')) as noshow,
-          AVG(EXTRACT(EPOCH FROM (returned_at - activated_at))/60) FILTER (WHERE status = 'returned' AND activated_at IS NOT NULL) as avg_wait,
+          COUNT(*) FILTER (WHERE manually_notified = true) as manually_notified,
+          AVG(EXTRACT(EPOCH FROM (returned_at - activated_at))/60)
+            FILTER (WHERE status = 'returned' AND activated_at IS NOT NULL) as avg_wait,
           COUNT(*) as total
         FROM patients p
         JOIN hospitals h ON p.hospital_id = h.id
@@ -134,6 +138,7 @@ app.get('/api/hospitals/:code/report', async (req, res) => {
       if (rows[0]) {
         stats.returned = parseInt(rows[0].returned) || 0;
         stats.noshow = parseInt(rows[0].noshow) || 0;
+        stats.manually_notified = parseInt(rows[0].manually_notified) || 0;
         stats.total = parseInt(rows[0].total) || 0;
         stats.avg_wait = Math.round(parseFloat(rows[0].avg_wait) || 0);
       }
@@ -145,7 +150,26 @@ app.get('/api/hospitals/:code/report', async (req, res) => {
         GROUP BY EXTRACT(HOUR FROM created_at) ORDER BY count DESC LIMIT 1
       `, [code]);
       if (hr[0]) stats.peak_hour = hr[0].hour;
-    } catch (_) { /* DB might not be connected */ }
+    } catch (_) {}
+
+    try {
+      const { rows: cv } = await db.query(`
+        SELECT
+          COUNT(*) as total,
+          ROUND(AVG(EXTRACT(EPOCH FROM (liberated_at - created_at))/60)
+            FILTER (WHERE liberated_at IS NOT NULL)) as avg_occupation,
+          ROUND(AVG(EXTRACT(EPOCH FROM (liberated_at - results_flagged_at))/60)
+            FILTER (WHERE liberated_at IS NOT NULL AND results_flagged_at IS NOT NULL)) as avg_results_liberation
+        FROM civieres c
+        JOIN hospitals h ON c.hospital_id = h.id
+        WHERE h.code = $1 AND c.created_at >= CURRENT_DATE
+      `, [code]);
+      if (cv[0]) {
+        civiereStats.total = parseInt(cv[0].total) || 0;
+        civiereStats.avg_occupation = cv[0].avg_occupation ? parseInt(cv[0].avg_occupation) : null;
+        civiereStats.avg_results_liberation = cv[0].avg_results_liberation ? parseInt(cv[0].avg_results_liberation) : null;
+      }
+    } catch (_) {}
 
     const hospitalName = config.hospitals[code]?.name || code;
     const now = new Date();
@@ -167,13 +191,20 @@ app.get('/api/hospitals/:code/report', async (req, res) => {
       .text(`Date: ${shiftDate}`, 50, 132)
       .text(`Généré à: ${shiftTime}`, 50, 149);
 
-    // Stats
-    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1965D4').text('Statistiques du quart', 50, 185);
-    doc.moveTo(50, 203).lineTo(545, 203).strokeColor('#ddd').lineWidth(1).stroke();
+    if (nurseName) {
+      doc.text(`Infirmière: ${nurseName}`, 50, 166);
+    }
+
+    const sectionTop = nurseName ? 200 : 185;
+
+    // Stats de file
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1965D4').text('Statistiques — File virtuelle', 50, sectionTop);
+    doc.moveTo(50, sectionTop + 18).lineTo(545, sectionTop + 18).strokeColor('#ddd').lineWidth(1).stroke();
 
     const statRows = [
       ['Patients traités (revenus)', stats.returned],
       ['No-show / Non confirmés', stats.noshow],
+      ['Rappelés manuellement', stats.manually_notified],
       ['Total enregistrés', stats.total],
       ['Temps moyen d\'attente', stats.avg_wait ? `${stats.avg_wait} min` : 'N/A'],
       ['Heure de pointe', stats.peak_hour !== null ? `${stats.peak_hour}h00` : 'N/A'],
@@ -181,8 +212,29 @@ app.get('/api/hospitals/:code/report', async (req, res) => {
       ['Taux de retour', stats.total > 0 ? `${Math.round(stats.returned / stats.total * 100)}%` : 'N/A']
     ];
 
-    let y = 215;
+    let y = sectionTop + 30;
     statRows.forEach(([label, value], i) => {
+      const bg = i % 2 === 0 ? '#F8F8F8' : '#FFFFFF';
+      doc.rect(50, y, 495, 22).fill(bg);
+      doc.fontSize(11).font('Helvetica').fillColor('#333').text(label, 60, y + 6);
+      doc.font('Helvetica-Bold').text(String(value), 400, y + 6, { width: 130, align: 'right' });
+      y += 22;
+    });
+
+    // Stats civières
+    y += 16;
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1965D4').text('Statistiques — Civières', 50, y);
+    y += 18;
+    doc.moveTo(50, y).lineTo(545, y).strokeColor('#ddd').lineWidth(1).stroke();
+    y += 12;
+
+    const civiereRows = [
+      ['Civières utilisées aujourd\'hui', civiereStats.total],
+      ['Temps moyen d\'occupation', civiereStats.avg_occupation ? `${civiereStats.avg_occupation} min` : 'N/A'],
+      ['Délai moyen résultats → libération', civiereStats.avg_results_liberation ? `${civiereStats.avg_results_liberation} min` : 'N/A']
+    ];
+
+    civiereRows.forEach(([label, value], i) => {
       const bg = i % 2 === 0 ? '#F8F8F8' : '#FFFFFF';
       doc.rect(50, y, 495, 22).fill(bg);
       doc.fontSize(11).font('Helvetica').fillColor('#333').text(label, 60, y + 6);

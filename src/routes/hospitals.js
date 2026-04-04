@@ -408,12 +408,35 @@ router.get('/all/admin-stats', async (req, res) => {
         COUNT(p.id) FILTER (WHERE p.status = 'non_confirme' AND p.created_at >= CURRENT_DATE) as non_confirme_today,
         COUNT(p.id) FILTER (WHERE p.status = 'noshow' AND p.created_at >= CURRENT_DATE) as noshow_today,
         COUNT(p.id) FILTER (WHERE p.status = 'returned' AND p.created_at >= CURRENT_DATE) as returned_today,
+        COUNT(p.id) FILTER (WHERE p.manually_notified = true AND p.created_at >= CURRENT_DATE) as manually_notified_today,
         AVG(p.estimated_wait_minutes) FILTER (WHERE p.status IN ('waiting','notified')) as avg_wait
       FROM hospitals h
       LEFT JOIN patients p ON p.hospital_id = h.id
       GROUP BY h.id, h.code, h.name, h.is_active
       ORDER BY h.name
     `);
+
+    // Civières stats (active + today metrics)
+    let civiereRows = [];
+    try {
+      const { rows: cr } = await db.query(`
+        SELECT
+          h.code,
+          COUNT(c.id) FILTER (WHERE c.status != 'liberee') as active_civieres,
+          COUNT(c.id) FILTER (WHERE c.created_at >= CURRENT_DATE) as total_today,
+          ROUND(AVG(EXTRACT(EPOCH FROM (c.liberated_at - c.created_at))/60)
+            FILTER (WHERE c.liberated_at IS NOT NULL AND c.created_at >= CURRENT_DATE)) as avg_occupation_min,
+          ROUND(AVG(EXTRACT(EPOCH FROM (c.liberated_at - c.results_flagged_at))/60)
+            FILTER (WHERE c.liberated_at IS NOT NULL AND c.results_flagged_at IS NOT NULL AND c.created_at >= CURRENT_DATE)) as avg_results_liberation_min
+        FROM hospitals h
+        LEFT JOIN civieres c ON c.hospital_id = h.id
+        GROUP BY h.code
+      `);
+      civiereRows = cr;
+    } catch (_) { /* table may not exist yet */ }
+
+    const civiereMap = {};
+    civiereRows.forEach(r => { civiereMap[r.code] = r; });
 
     // Patients par heure (last 12h)
     const { rows: hourly } = await db.query(`
@@ -429,16 +452,24 @@ router.get('/all/admin-stats', async (req, res) => {
     res.json({
       success: true,
       data: {
-        hospitals: rows.map(h => ({
-          code: h.code,
-          name: h.name,
-          isActive: h.is_active,
-          queueCount: parseInt(h.queue_count) || 0,
-          notifiedCount: parseInt(h.notified_count) || 0,
-          lwbs: parseInt(h.noshow_today) + parseInt(h.non_confirme_today || 0),
-          returnedToday: parseInt(h.returned_today) || 0,
-          avgWaitMinutes: Math.round(parseFloat(h.avg_wait) || 0)
-        })),
+        hospitals: rows.map(h => {
+          const cv = civiereMap[h.code] || {};
+          return {
+            code: h.code,
+            name: h.name,
+            isActive: h.is_active,
+            queueCount: parseInt(h.queue_count) || 0,
+            notifiedCount: parseInt(h.notified_count) || 0,
+            lwbs: parseInt(h.noshow_today) + parseInt(h.non_confirme_today || 0),
+            returnedToday: parseInt(h.returned_today) || 0,
+            manuallyNotifiedToday: parseInt(h.manually_notified_today) || 0,
+            avgWaitMinutes: Math.round(parseFloat(h.avg_wait) || 0),
+            activeCivieres: parseInt(cv.active_civieres) || 0,
+            civieresToday: parseInt(cv.total_today) || 0,
+            avgCiviereOccupationMin: parseInt(cv.avg_occupation_min) || null,
+            avgResultsLiberationMin: parseInt(cv.avg_results_liberation_min) || null
+          };
+        }),
         hourlyPatients: hourly.map(r => ({
           hour: r.hour,
           count: parseInt(r.count)
@@ -450,5 +481,96 @@ router.get('/all/admin-stats', async (req, res) => {
     res.status(500).json({ success: false, error: 'Erreur lors de la récupération' });
   }
 });
+
+/**
+ * GET /api/hospitals/:code/civieres
+ * Liste des civières actives d'un hôpital
+ */
+router.get('/:code/civieres',
+  [param('code').isIn(Object.keys(config.hospitals))],
+  validate,
+  async (req, res) => {
+    try {
+      const { rows } = await db.query(`
+        SELECT c.*
+        FROM civieres c
+        JOIN hospitals h ON c.hospital_id = h.id
+        WHERE h.code = $1 AND c.status != 'liberee'
+        ORDER BY c.created_at ASC
+      `, [req.params.code]);
+      res.json({ success: true, data: rows });
+    } catch (error) {
+      logger.error('Erreur civieres', error);
+      res.status(500).json({ success: false, error: 'Erreur récupération civières' });
+    }
+  }
+);
+
+/**
+ * POST /api/hospitals/:code/civieres
+ * Ajouter une civière
+ */
+router.post('/:code/civieres',
+  [
+    param('code').isIn(Object.keys(config.hospitals)),
+    body('patientName').notEmpty().trim(),
+    body('numero').isInt({ min: 1, max: 20 }),
+    body('reason').optional().isString()
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const { code } = req.params;
+      const { patientName, numero, reason } = req.body;
+      const { rows: hospitals } = await db.query('SELECT id FROM hospitals WHERE code = $1', [code]);
+      if (!hospitals.length) return res.status(404).json({ success: false, error: 'Hôpital non trouvé' });
+
+      const { rows } = await db.query(`
+        INSERT INTO civieres (hospital_id, patient_name, numero, reason)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *
+      `, [hospitals[0].id, patientName, numero, reason]);
+
+      res.json({ success: true, data: rows[0] });
+    } catch (error) {
+      logger.error('Erreur création civière', error);
+      res.status(500).json({ success: false, error: 'Erreur création civière' });
+    }
+  }
+);
+
+/**
+ * PUT /api/hospitals/:code/civieres/:id
+ * Mettre à jour le statut d'une civière
+ */
+router.put('/:code/civieres/:id',
+  [
+    param('code').isIn(Object.keys(config.hospitals)),
+    param('id').isInt(),
+    body('status').isIn(['en_attente_resultats','resultats_signales','decision_en_cours','liberee'])
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      let extraFields = '';
+      if (status === 'resultats_signales') extraFields = ', results_flagged_at = CURRENT_TIMESTAMP';
+      else if (status === 'decision_en_cours') extraFields = ', decision_at = CURRENT_TIMESTAMP';
+      else if (status === 'liberee') extraFields = ', liberated_at = CURRENT_TIMESTAMP';
+
+      const { rows } = await db.query(`
+        UPDATE civieres SET status = $1${extraFields} WHERE id = $2 RETURNING *
+      `, [status, id]);
+
+      if (!rows.length) return res.status(404).json({ success: false, error: 'Civière non trouvée' });
+      res.json({ success: true, data: rows[0] });
+    } catch (error) {
+      logger.error('Erreur mise à jour civière', error);
+      res.status(500).json({ success: false, error: 'Erreur mise à jour civière' });
+    }
+  }
+);
 
 module.exports = router;
